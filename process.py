@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-04 11:54:52
+# @Last Modified time: 2017-03-05 19:46:27
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -581,7 +581,7 @@ def process_L2(_l1, _usr_cfg):
         l2['obs']['sigma'] = gsw.rho(sa,l2['obs']['t'],l2['obs']['p']) - 1000
     if 'sigma' in l2['obs'].keys():
         if l2['obs']['sigma'] != []:
-            l2['mld_index'] = estimate_mld(l2['obs']['sigma'], _criterion=0.125)
+            l2['mld_index'] = estimate_mld(l2['obs']['sigma'])
             l2['mld'] = l2['obs']['p'][l2['mld_index']]
     if 'bbp' in l2['obs'].keys():
         # Estimate POC
