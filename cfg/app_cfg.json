@@ -8,7 +8,10 @@
       "usr_cfg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/param/",
       "msg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/",
       "raw":"RAW_EOT",
-      "level":["L0", "L1", "L2"]
+      "level":["L0", "L1", "L2"],
+      "log":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.log",
+      "err":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.err",
+      "pid":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.pid"
     }
   },
   "dashboard":{

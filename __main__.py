@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 20:34:02
+# @Last Modified time: 2017-03-05 22:43:36
 
 import sys
 from process import bash, rt
@@ -10,7 +10,7 @@ from process import bash, rt
 
 print('FloatProcess v0.1.0')
 if len(sys.argv) != 4:
-    print('Need 2 arguments:\n' +
+    print('Need 3 arguments:\n' +
           '\t<string> processing mode (bash or rt)\n' +
           '\t<string> path to application configuration\n' +
           '\t<string> usr_id or msg_file_name depending on mode\n')
