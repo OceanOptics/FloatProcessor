@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 19:46:27
+# @Last Modified time: 2017-03-05 20:40:00
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -759,8 +759,9 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
         # Update dashboard
         update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
                                          app_cfg['dashboard']['path']['usr_status']),
-                            usr_id, wmo=usr_cfg['wmo'],
-                            dt_last=msg_db['dt'],profile_n=msg_db['profile_id'])
+                            usr_id, _wmo=usr_cfg['wmo'],
+                            _dt_last=msg_db['dt'],
+                            _profile_n=msg_db['profile_id'])
         export_msg_to_json_profile(msg_db,
                                    app_cfg['dashboard']['path']['dir'],
                                    usr_id, msg_id)
@@ -862,13 +863,17 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                                       _reset=dashboard_rebuild_timeseries):
                     # Disable time series reset as we just did it
                     dashboard_rebuild_timeseries = False
+                if msg_id == '000':
+                    first_msg_dt = msg_db['dt']
 
         # Update dashboard with information from last message
         if app_cfg['dashboard']['active']['bash']:
             update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
                                              app_cfg['dashboard']['path']['usr_status']),
-                                usr_id, wmo=usr_cfg['wmo'],
-                                dt_last=msg_db['dt'], profile_n=msg_db['profile_id'])
+                                usr_id, _wmo=usr_cfg['wmo'],
+                                _dt_first=first_msg_dt,
+                                _dt_last=msg_db['dt'],
+                                _profile_n=msg_db['profile_id'])
 
         if __debug__:
             print('Done')
@@ -876,7 +881,7 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
     return 0
 
 if __name__ == '__main__':
-    # for i in range(109):
-    #     rt('0572.%03d.msg' % i)
+    for i in range(109):
+        rt('0572.%03d.msg' % i)
     # rt('0572.010.msg')
-    bash(['n0572', 'n0573', 'n0574'])
+    # bash(['n0572', 'n0573', 'n0574'])

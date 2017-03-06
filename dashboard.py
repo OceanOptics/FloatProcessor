@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-04 11:46:03
+# @Last Modified time: 2017-03-05 20:41:58
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -24,61 +24,72 @@ PROFILE_FIELDS_MANDATORY = ['p','t','s']
 TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla','poc','fdom','o2_c']
 TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s']
 
-def update_float_status(filename, float_id, wmo='undefined',
-                        profile_n=-1, dt_last='undefined',
-                        dt_first='undefined', status='undefined',
-                        institution='undefined', project='undefined'):
+def update_float_status(_filename, _float_id, _wmo='undefined',
+                        _profile_n=-1, _dt_last='undefined',
+                        _dt_first='undefined', _status='undefined',
+                        _institution='undefined', _project='undefined',
+                        _reset=False):
     # UPDATE_FLOAT_STATUS: update json file of float status
     # EXAMPLE:
-    #   update_float_status('float_status.json', 'n0572', wmo='5902462',
-    #     dt_last=datetime.today())
+    #   update_float_status('float_status.json', 'n0572', _wmo='5902462',
+    #     _dt_last=datetime.today())
 
-    # load previous float status
-    with open(filename) as data_file:
-        fs = simplejson.load(data_file)
+    # load current float status
+    if os.path.isfile(_filename) and not _reset:
+        with open(_filename) as data_file:
+            fs = simplejson.load(data_file)
+        if _float_id not in fs.keys():
+            fs[_float_id] = dict()
+    else:
+        fs = dict()
+        fs[_float_id] = dict()
 
     # set date of update in zulu time
     dt_update = datetime.utcnow()
-    fs[float_id]['dt_update'] = dt_update.strftime('%d-%b-%Y %H:%M:%S')
+    fs[_float_id]['dt_update'] = dt_update.strftime('%d-%b-%Y %H:%M:%S')
     # update wmo
-    if wmo != 'undefined':
-        fs[float_id]['wmo'] = wmo
+    if _wmo != 'undefined':
+        fs[_float_id]['wmo'] = _wmo
     # update profile number
-    if profile_n != -1:
-        fs[float_id]['profile_n'] = profile_n
+    if _profile_n != -1:
+        fs[_float_id]['profile_n'] = _profile_n
     # update institution
-    if institution != 'undefined':
-        fs[float_id]['institution'] = institution
+    if _institution != 'undefined':
+        fs[_float_id]['institution'] = _institution
     # update project
-    if project != 'undefined':
-        fs[float_id]['project'] = project
+    if _project != 'undefined':
+        fs[_float_id]['project'] = _project
     # update date of last report
-    if dt_last != 'undefined':
-        fs[float_id]['dt_last'] = dt_last.strftime('%d-%b-%Y %H:%M:%S')
+    if _dt_last != 'undefined':
+        fs[_float_id]['dt_last'] = _dt_last.strftime('%d-%b-%Y %H:%M:%S')
+        dt_last = _dt_last
     else:
         dt_last = datetime.strptime(
-            fs[float_id]['dt_last'], '%d-%b-%Y %H:%M:%S')
+            fs[_float_id]['dt_last'], '%d-%b-%Y %H:%M:%S')
     # update days since last report
     delta_last = dt_update - dt_last
-    fs[float_id]['days_last'] = delta_last.days
+    fs[_float_id]['days_last'] = delta_last.days
     # update date of first report
-    if dt_first != 'undefined':
-        fs[float_id]['dt_first'] = dt_first.strftime('%d-%b-%Y %H:%M:%S')
-    else:
-        dt_first = datetime.strptime(
-            fs[float_id]['dt_first'], '%d-%b-%Y %H:%M:%S')
+    if _dt_first != 'undefined':
+        fs[_float_id]['dt_first'] = _dt_first.strftime('%d-%b-%Y %H:%M:%S')
+    elif ('dt_first' not in fs[_float_id].keys() or
+          fs[_float_id]['dt_first'] == 'undefined') and _profile_n == 0:
+        fs[_float_id]['dt_first'] = dt_last.strftime('%d-%b-%Y %H:%M:%S')
     # update days since first report
-    delta_first = dt_update - dt_first
-    fs[float_id]['days_last'] = delta_first.days
+    if 'dt_first' in fs[_float_id].keys():
+        dt_first = datetime.strptime(
+            fs[_float_id]['dt_first'], '%d-%b-%Y %H:%M:%S')
+        delta_first = dt_update - dt_first
+        fs[_float_id]['days_last'] = delta_first.days
     # update float status
-    if status != 'undefined':
-        fs[float_id]['status'] = status
+    if _status != 'undefined':
+        fs[_float_id]['status'] = _status
     elif delta_last.days > 15:
-        fs[float_id]['status'] = 'lost'
+        fs[_float_id]['status'] = 'inactive'
     else:
-        fs[float_id]['status'] = 'active'
+        fs[_float_id]['status'] = 'active'
 
-    with open(filename, 'w') as outfile:
+    with open(_filename, 'w') as outfile:
         simplejson.dump(fs, outfile)
 
 def export_msg_to_json_profile(_msg, _path, _usr_id, _msg_id):

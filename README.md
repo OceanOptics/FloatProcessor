@@ -26,12 +26,12 @@ Setup real-time run:
 Real-time processing
 
     python -O 'rt' <msg_file_name>
-    python -O __main__.py 'rt' '0572.056.msg'
+    python -O __main__.py 'rt' 'cfg/app_cfg.json' '0572.056.msg'
 
 Batch processing
 
     python -O 'bash' <usr_id>
-    python -O __main__.py 'bash' 'n0572'
+    python -O __main__.py 'bash' 'cfg/app_cfg.json' 'n0572'
 
 ## Description of library
 Description of files from the packages:
