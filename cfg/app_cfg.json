@@ -1,0 +1,24 @@
+{
+  "process":{
+    "active":{
+      "bash":1,
+      "rt":1
+    },
+    "path":{
+      "usr_cfg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/param/",
+      "msg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/",
+      "raw":"RAW_EOT",
+      "level":["L0", "L1", "L2"]
+    }
+  },
+  "dashboard":{
+    "active":{
+      "bash":1,
+      "rt":1
+    },
+    "path":{
+      "dir":"/Users/nils/Documents/Code/www/UMaine/Float_Monitoring/data/",
+      "usr_status":"NAAMES_float_status.json"
+    }
+  }
+}
