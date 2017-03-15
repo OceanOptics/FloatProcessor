@@ -46,7 +46,7 @@ Description of files from the packages:
   - ADD support other float models: PROVOR, APEX
   - ADD corrections (CDOM, Dark) to fluorescence chlorophyll *a* profiles
   - ADD drift correction to attenuation profiles
-  - IMPROVE MLD function (based on other libraries)
   - IMPROVE NPQ correction with Xing17
   - ADD export in NetCDF format
+  - IMPROVE remove warnings from gsw when NaN values
   - REFACTORING process.py in one class

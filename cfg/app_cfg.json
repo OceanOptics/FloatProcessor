@@ -6,8 +6,8 @@
     },
     "path":{
       "usr_cfg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/param/",
-      "msg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/",
-      "raw":"RAW_EOT",
+      "msg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/RAW_EOT/",
+      "out":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/",
       "level":["L0", "L1", "L2"],
       "log":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.log",
       "err":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.err",

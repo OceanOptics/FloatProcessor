@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 20:41:58
+# @Last Modified time: 2017-03-15 15:57:25
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -18,11 +18,11 @@ from datetime import datetime
 #  DASHBOARD FIELDS  #
 ######################
 # fields for profile
-PROFILE_FIELDS = ['p','par','t','s','chla','poc','fdom','o2_c']
-PROFILE_FIELDS_MANDATORY = ['p','t','s']
+PROFILE_FIELDS = ['p','par','t','s','chla','bbp','fdom','o2_c']
+PROFILE_FIELDS_MANDATORY = ['p','t','s','chla']
 # fields for timeseries
-TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla','poc','fdom','o2_c']
-TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s']
+TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla','bbp','fdom','o2_c']
+TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s', 'chla']
 
 def update_float_status(_filename, _float_id, _wmo='undefined',
                         _profile_n=-1, _dt_last='undefined',
@@ -148,7 +148,7 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         print('ERROR: Missing key obs in msg.')
         return -1
     if 'mld_index' not in _msg.keys():
-        print('ERROR: Missing key mld_index in msg.')
+        print('ERROR: Missing key mld_index in msg ' + str(_msg['profile_id']) + '.')
         return -1
     # Set filename
     filename = os.path.join(_path, _usr_id + '.timeseries.json')

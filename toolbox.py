@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 13:15:32
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 18:48:49
+# @Last Modified time: 2017-03-15 14:02:55
 #
 # This module is developped to calibrate, adjust and compute additional product
 # measurements from biogeochemical floats
@@ -300,23 +300,50 @@ def o2_mll2umolkg(_o2_concentration):
 #   ESTIMATE PRODUCTS   #
 #########################
 
-def estimate_mld(_sigma, _criterion=0.03):
+def estimate_mld(_p, _sigma, _criterion=0.03, _p_0=10):
   # estimate mixed layer depth (MLD) with a fixed density threshold
+  #   The default reference depth is set at 10 m to avoid a large part of
+  #     the strong diurnal cycle in the top few meters of the ocean.
+  #   The default fixed criterion in density is 0.03 kg/m3 difference from
+  #     surface (DR with R for Rho i.e. density).
+  #
+  # More informations at:
+  #   http://www.ifremer.fr/cerweb/deboyer/mld/Surface_Mixed_Layer_Depth.php
   #
   # INPUT:
+  #   _p <np.array> pressure (m or dBar)
   #   _sigma <np.array> density anomaly (rho - 1000) (kg m^-3)
   #     assume that surface is first value of array
   #   _criterion <float> fixed threshold (kg m^-3)
   #     default: 0.03 kg m^-3
+  #   _p_0 <float> reference depth (m or dBar, be consistent with _p)
+  #     default: 10 m
   #
   # OUTPUT:
-  #   _index_mld <> index of MLD in _sigma
+  #   mld <float> mixed layer depth
+  #   mld_index <integer> index of MLD in _sigma
   #
 
-  if _sigma != []:
-    return np.argmin(abs(abs(_sigma - _sigma[0]) - _criterion))
-  else:
-    return -1
+  # Keep unique set of pressure with matching density anomaly
+  p, i = np.unique(_p, return_index=True)
+  sigma = _sigma[i]
+
+  # Get density anomaly at _p_0
+  sigma_0 = np.interp(_p_0, p, sigma)
+
+  # Find starting index
+  i = np.argmin(np.absolute(p - _p_0))
+  # Find index of density anomaly
+  mld_index = np.argmin(abs(sigma[i:] - (sigma_0 + _criterion))) + i
+  # Other method with same result, (need to be benchmarked)
+  # while i < len(sigma) and sigma[i] <= sigma_0 + _criterion:
+  #   i = i + 1;
+  # mld_index = i - 1;
+  # Find MLD
+  mld = np.interp(sigma_0 + _criterion, sigma[mld_index-1:], p[mld_index-1:])
+  # Less accurate method but faster
+  # mld = p[mld_index]
+  return mld, mld_index
 
 
 def estimate_zeu(_p, _par):

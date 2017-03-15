@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 20:40:00
+# @Last Modified time: 2017-03-15 16:08:39
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -124,6 +124,9 @@ def import_msg(filename):
             continue
         if l.find('Resm') != -1:
             obs_end = True
+            continue
+        if l.find('00000000000000FFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFF') != -1:
+            # skip observation
             continue
         if obs_begin and not obs_end and len(l) in valid_obs_len:
             # Variables are 16-bit hex-encoded
@@ -295,11 +298,20 @@ def import_app_cfg(_filename):
                 if 'msg' not in d['process']['path'].keys():
                     print(_filename + ': missing variable process:path:msg')
                     return -1
-                if 'raw' not in d['process']['path'].keys():
-                    print(_filename + ': missing variable process:path:raw')
+                if 'out' not in d['process']['path'].keys():
+                    print(_filename + ': missing variable process:path:out')
                     return -1
                 if 'level' not in d['process']['path'].keys():
                     print(_filename + ': missing variable process:path:level')
+                    return -1
+                if 'log' not in d['process']['path'].keys():
+                    print(_filename + ': missing variable process:path:log')
+                    return -1
+                if 'err' not in d['process']['path'].keys():
+                    print(_filename + ': missing variable process:path:err')
+                    return -1
+                if 'pid' not in d['process']['path'].keys():
+                    print(_filename + ': missing variable process:path:pid')
                     return -1
         # Check dashboard module
         if 'dashboard' not in d.keys():
@@ -578,11 +590,21 @@ def process_L2(_l1, _usr_cfg):
         # Estimate pratical temperature
         ct = gsw.CT_from_t(sa,l2['obs']['t'],l2['obs']['p'])
         # Estimate density
-        l2['obs']['sigma'] = gsw.rho(sa,l2['obs']['t'],l2['obs']['p']) - 1000
+        l2['obs']['sigma'] = gsw.sigma0(sa,ct)
     if 'sigma' in l2['obs'].keys():
         if l2['obs']['sigma'] != []:
-            l2['mld_index'] = estimate_mld(l2['obs']['sigma'])
-            l2['mld'] = l2['obs']['p'][l2['mld_index']]
+            # Estimate "standard" Mixed Layer Depth
+            #   fixed density threshold of 0.03 mg L^-1
+            l2['mld'], l2['mld_index'] = estimate_mld(l2['obs']['p'],
+                                                      l2['obs']['sigma'],
+                                                      0.03)
+            # Estimate Daily Mixed Layer Depth
+            #   fixed density threshold of 0.005 mg L^-1
+            l2['mld_daily'], l2['mld_daily_index'] = estimate_mld(
+                                                      l2['obs']['p'],
+                                                      l2['obs']['sigma'],
+                                                      0.005)
+
     if 'bbp' in l2['obs'].keys():
         # Estimate POC
         l2['obs']['poc'] = estimate_poc(l2['obs']['bbp'],
@@ -618,7 +640,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
     #
     # OUTPUT:
     #   csv file in
-    #     _app_cfg['process']['path']['msg'][_proc_level]/<usr_id>.<msg_id>.csv
+    #     _app_cfg['process']['path']['out'][_proc_level]/<usr_id>.<msg_id>.csv
     #   0 if exporation went well
     #     or
     #   -1 if error during exportation process
@@ -635,7 +657,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
         filename = _filename
     # Set path
     if _proc_level == 'RAW':
-        subdir = _app_cfg['process']['path']['raw']
+        subdir = 'RAW'
     elif _proc_level == 'L0':
         subdir = _app_cfg['process']['path']['level'][0]
     elif _proc_level == 'L1':
@@ -646,9 +668,9 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
         print('ERROR: Unknow processing level.')
         return -1
     if _sub_dir_user:
-        path = os.path.join(_app_cfg['process']['path']['msg'], subdir, usr_id)
+        path = os.path.join(_app_cfg['process']['path']['out'], subdir, usr_id)
     else:
-        path = os.path.join(_app_cfg['process']['path']['msg'], subdir)
+        path = os.path.join(_app_cfg['process']['path']['out'], subdir)
     # Create path if necessary
     if not os.path.exists(path):
         os.makedirs(path)
@@ -724,11 +746,9 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
     usr_cfg = import_usr_cfg(os.path.join(app_cfg['process']['path']['usr_cfg'],
                                           _usr_cfg_name))
     msg_l0 = import_msg(os.path.join(app_cfg['process']['path']['msg'],
-                                     app_cfg['process']['path']['raw'],
                                      usr_id, _msg_name))
 
-
-    if app_cfg['process']['active']['rt']:
+    if app_cfg['process']['active']['rt'] and len(msg_l0['obs']['p']) > 0:
         # Process data
         msg_l1 = process_L1(msg_l0, usr_cfg)  # counts to SI units
         if msg_l1 == -1:
@@ -762,12 +782,14 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
                             usr_id, _wmo=usr_cfg['wmo'],
                             _dt_last=msg_db['dt'],
                             _profile_n=msg_db['profile_id'])
-        export_msg_to_json_profile(msg_db,
-                                   app_cfg['dashboard']['path']['dir'],
-                                   usr_id, msg_id)
-        export_msg_to_json_timeseries(msg_db,
-                                      app_cfg['dashboard']['path']['dir'],
-                                      usr_id)
+        if len(msg_db['obs']['p']) > 0:
+            # If profile not empty
+            export_msg_to_json_profile(msg_db,
+                                       app_cfg['dashboard']['path']['dir'],
+                                       usr_id, msg_id)
+            export_msg_to_json_timeseries(msg_db,
+                                          app_cfg['dashboard']['path']['dir'],
+                                          usr_id)
 
     if __debug__:
         print('Done')
@@ -815,16 +837,14 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
         # List all messages
         msg_list = [name for name in os.listdir(os.path.join(
                     app_cfg['process']['path']['msg'],
-                    app_cfg['process']['path']['raw'],
                     usr_id)) if name[-4:] == '.msg']
 
         for msg_name in msg_list:
             # Load message
             msg_l0 = import_msg(os.path.join(app_cfg['process']['path']['msg'],
-                                             app_cfg['process']['path']['raw'],
                                              usr_id, msg_name))
 
-            if app_cfg['process']['active']['bash']:
+            if app_cfg['process']['active']['bash'] and len(msg_l0['obs']['p']) > 0:
                 # Process data
                 msg_l1 = process_L1(msg_l0, usr_cfg)  # counts to SI units
                 if msg_l1 == -1:
@@ -854,15 +874,17 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
             # Update dashboard
             if app_cfg['dashboard']['active']['bash']:
                 msg_id = msg_name.split('.')[1]
-                export_msg_to_json_profile(msg_db,
-                                   app_cfg['dashboard']['path']['dir'],
-                                   usr_id, msg_id)
-                if 0 == export_msg_to_json_timeseries(msg_db,
-                                      app_cfg['dashboard']['path']['dir'],
-                                      usr_id,
-                                      _reset=dashboard_rebuild_timeseries):
-                    # Disable time series reset as we just did it
-                    dashboard_rebuild_timeseries = False
+                if len(msg_db['obs']['p']) > 0:
+                    # if profile not empty
+                    export_msg_to_json_profile(msg_db,
+                                       app_cfg['dashboard']['path']['dir'],
+                                       usr_id, msg_id)
+                    if 0 == export_msg_to_json_timeseries(msg_db,
+                                          app_cfg['dashboard']['path']['dir'],
+                                          usr_id,
+                                          _reset=dashboard_rebuild_timeseries):
+                        # Disable time series reset as we just did it
+                        dashboard_rebuild_timeseries = False
                 if msg_id == '000':
                     first_msg_dt = msg_db['dt']
 
@@ -881,7 +903,7 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
     return 0
 
 if __name__ == '__main__':
-    for i in range(109):
-        rt('0572.%03d.msg' % i)
-    # rt('0572.010.msg')
-    # bash(['n0572', 'n0573', 'n0574'])
+    # for i in range(109):
+    #     rt('0572.%03d.msg' % i)
+    # rt('0572.001.msg')
+    bash(['n0572', 'n0573', 'n0574'])
