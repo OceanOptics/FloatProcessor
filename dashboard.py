@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-15 15:57:25
+# @Last Modified time: 2017-03-16 15:11:00
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -170,7 +170,7 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
             fs[f].append(_msg[f])
         elif f in _msg['obs'].keys():
             # average in MLD
-            fs[f].append(np.nanmean(_msg['obs'][f]))
+            fs[f].append(np.nanmedian(_msg['obs'][f]))
             fs[f+'_std'].append(np.nanstd(_msg['obs'][f]))
         elif f in TIMESERIES_FIELDS_MANDATORY:
             print('ERROR: Missing key ' + f + ' in msg|msg[obs].')
