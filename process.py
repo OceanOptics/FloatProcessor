@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-15 16:08:39
+# @Last Modified time: 2017-03-20 23:08:51
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -838,6 +838,8 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
         msg_list = [name for name in os.listdir(os.path.join(
                     app_cfg['process']['path']['msg'],
                     usr_id)) if name[-4:] == '.msg']
+        # Sort list as os.listdir return elements in arbitraty order
+        msg_list.sort()
 
         for msg_name in msg_list:
             # Load message
@@ -906,4 +908,4 @@ if __name__ == '__main__':
     # for i in range(109):
     #     rt('0572.%03d.msg' % i)
     # rt('0572.001.msg')
-    bash(['n0572', 'n0573', 'n0574'])
+    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
