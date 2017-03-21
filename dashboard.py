@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-16 15:11:00
+# @Last Modified time: 2017-03-20 19:18:55
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -40,6 +40,7 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
             fs = simplejson.load(data_file)
         if _float_id not in fs.keys():
             fs[_float_id] = dict()
+            fs[_float_id]['float_id'] = _float_id
     else:
         fs = dict()
         fs[_float_id] = dict()
@@ -80,7 +81,7 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
         dt_first = datetime.strptime(
             fs[_float_id]['dt_first'], '%d-%b-%Y %H:%M:%S')
         delta_first = dt_update - dt_first
-        fs[_float_id]['days_last'] = delta_first.days
+        fs[_float_id]['days_first'] = delta_first.days
     # update float status
     if _status != 'undefined':
         fs[_float_id]['status'] = _status
