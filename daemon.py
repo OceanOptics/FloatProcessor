@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2017-03-05 20:40:00
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 23:22:21
+# @Last Modified time: 2017-03-20 22:19:03
 
 import sys
 import os
@@ -45,11 +45,9 @@ class EventHandler(pyinotify.ProcessEvent):
 # Setup watcher and notifier
 wm = pyinotify.WatchManager()
 notifier = pyinotify.Notifier(wm, EventHandler())
-# wm.add_watch(os.path.join(CFG['process']['path']['msg'],
-#                           CFG['process']['path']['raw']),
+# wm.add_watch(CFG['process']['path']['msg'],
 #              pyinotify.ALL_EVENTS, rec=True)
-wm.add_watch(os.path.join(CFG['process']['path']['msg'],
-                          CFG['process']['path']['raw']),
+wm.add_watch(CFG['process']['path']['msg'],
              pyinotify.IN_CLOSE_WRITE, rec=True)
 
 # Start infinit watching and notifying loop
