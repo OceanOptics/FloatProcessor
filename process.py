@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-20 23:08:51
+# @Last Modified time: 2017-04-01 16:46:02
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -833,6 +833,8 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
 
         # Reset Time series on first run
         dashboard_rebuild_timeseries = True;
+        # Init first msg date
+        first_msg_dt = 'undefined';
 
         # List all messages
         msg_list = [name for name in os.listdir(os.path.join(
