@@ -2,22 +2,25 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-05 22:43:36
+# @Last Modified time: 2017-04-01 16:18:10
 
 import sys
 from process import bash, rt
 
 
-print('FloatProcess v0.1.0')
-if len(sys.argv) != 4:
-    print('Need 3 arguments:\n' +
+print('FloatProcess v0.1.1')
+if len(sys.argv) < 4:
+    print('Need >3 arguments:\n' +
           '\t<string> processing mode (bash or rt)\n' +
           '\t<string> path to application configuration\n' +
-          '\t<string> usr_id or msg_file_name depending on mode\n')
+          '\t<string> float_id in bash mode | msg_file_name in rt mode\n')
 else:
     if sys.argv[1] == 'rt':
-        rt(sys.argv[3], _app_cfg_name=sys.argv[2])
+        if len(sys.argv) != 4:
+            print('Take only one msg_file_name')
+        else:
+            rt(sys.argv[3], _app_cfg_name=sys.argv[2])
     elif sys.argv[1] == 'bash':
-        bash([sys.argv[3]], _app_cfg_name=sys.argv[2])
+        bash(sys.argv[3:], _app_cfg_name=sys.argv[2])
     else:
         print('Unable to run, unknown mode')
