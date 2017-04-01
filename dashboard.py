@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-20 19:18:55
+# @Last Modified time: 2017-04-01 16:05:36
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -13,6 +13,7 @@ import simplejson
 import os
 import numpy as np
 from datetime import datetime
+from collections import OrderedDict
 
 ######################
 #  DASHBOARD FIELDS  #
@@ -37,12 +38,12 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
     # load current float status
     if os.path.isfile(_filename) and not _reset:
         with open(_filename) as data_file:
-            fs = simplejson.load(data_file)
+            fs = simplejson.load(data_file, object_pairs_hook=OrderedDict)
         if _float_id not in fs.keys():
             fs[_float_id] = dict()
             fs[_float_id]['float_id'] = _float_id
     else:
-        fs = dict()
+        fs = OrderedDict()
         fs[_float_id] = dict()
 
     # set date of update in zulu time
