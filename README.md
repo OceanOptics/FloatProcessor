@@ -21,17 +21,27 @@ Setup the web interface (optional):
   *coming soon*
 
 Setup real-time run:
+  *coming soon*
 
 ## First run
-Real-time processing
-
-    python -O 'rt' <msg_file_name>
-    python -O __main__.py 'rt' 'cfg/app_cfg.json' '0572.056.msg'
-
 Batch processing
 
-    python -O 'bash' <usr_id>
-    python -O __main__.py 'bash' 'cfg/app_cfg.json' 'n0572'
+    $python3 -O __main__.py bash cfg/app_cfg.json <usr_id>
+
+    FloatProcess v0.1.0
+
+Real-time processing with daemon:
+
+    $python3 -O daemon.py cfg/app_cfg.json
+
+    FloatProcess v0.1.0
+    Starting daemon for real-time processing
+    <path...>/FloatProcess/cfg/app_cfg.json
+
+Processing one profile (real-time started from other application/script)
+
+    $python3 -O __main__.py rt cfg/app_cfg.json <msg_file_name>
+
 
 ## Description of library
 Description of files from the packages:
@@ -39,6 +49,7 @@ Description of files from the packages:
  - `toolbox.py`: oceanographic toolbox containing the calibration and corrections methods
  - `process.py`: set of functions to load the configuration of the application and each individual float in order to process the profiles at different level
  - `dashboard.py`: set of functions to update the content of the web interface
+ - `daemon.py`: start daemon for real-time processing monitoring a directory
  - `test*.py`: various files used for testing and development
 
 ## TODO
@@ -46,7 +57,10 @@ Description of files from the packages:
   - ADD support other float models: PROVOR, APEX
   - ADD corrections (CDOM, Dark) to fluorescence chlorophyll *a* profiles
   - ADD drift correction to attenuation profiles
-  - IMPROVE NPQ correction with Xing17
+  - IMPROVE NPQ correction with Xing17 using PAR signal
   - ADD export in NetCDF format
   - IMPROVE remove warnings from gsw when NaN values
   - REFACTORING process.py in one class
+  - ADD Order float by active|more recent deployment in dashboard status
+  - ADD dark correction for PAR sensor
+  - CHECK N0574 inactive for 14 days
