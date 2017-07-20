@@ -21,7 +21,8 @@
     },
     "path":{
       "dir":"/Users/nils/Documents/Code/www/UMaine/Float_Monitoring/data/",
-      "usr_status":"NAAMES_float_status.json"
+      "usr_status":"NAAMES_float_status.json",
+      "db":"/tmp/float_explorer.db"
     }
   }
 }

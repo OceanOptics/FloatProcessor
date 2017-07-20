@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-04-01 16:46:02
+# @Last Modified time: 2017-06-26 18:02:51
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -72,7 +72,7 @@ def import_msg(filename):
     obs_end = False
     crv_on = False
     for l in f:
-        # Get float_id and profile_od
+        # Get float_id and profile_id
         if l.find('$ FloatId') != -1:
             d['float_id'] = int(float(l[-6:-2]))
             continue
@@ -247,6 +247,90 @@ def import_msg(filename):
     d['obs'] = obs
     d['park_obs'] = park_obs
     f.close()
+    return d
+
+def import_msg_provor(_filename):
+    # Import a file from NKE Provor float
+    #   Read data ASCII data from multiple files:
+    #       + read specified cast
+    #           recommended extension _09.txt
+    #       + read position in _T253.txt
+    #   Output to msg ASCII (L0)
+    #
+    # Documentation on file naming convention:
+    #   filename: id[a,b,c,d]_cycle_profile_cast.txt
+    #   last letter in id correspond to the deployment number
+    #   ex: a: first deployment
+    #       d: 4th deployment
+    #   cast: 09 upcast, 05 downcast, 06 drift
+    #   T253 position
+
+    d = dict()
+
+    # Read metadata: file T253.txt
+    with open(_filename + '_T253.txt', 'r') as f:
+        f.readline()     # Skip first line of header
+        l = f.readline()
+        s = l.split(' ')
+        # Get float_id and profile_id
+        d['float_id'] = int(s[1])   # Serial number of profiler
+        d['profile_id'] = int(s[3]) * 100 + int(s[4]) # Cycle# * 100 + Profile#
+
+        # Get date of profile
+        d['dt'] = datetime.strptime(s[0][1:-1], '%Y-%m-%d_%H:%M:%S')
+
+        # Get position
+        d['lat']= float(s[62]) + float(s[63])/60 + 0.000001*float(s[64])
+        if int(s[65]) == 1:
+          d['lat'] = -1 * d['lat']
+        d['lon']= float(s[66]) + float(s[67])/60 + 0.000001*float(s[68])
+        if int(s[69]) == 1:
+          d['lon'] = -1 * d['lon']
+
+    # Read up cast: file 09.txt
+    list_field_id=[0, 7, 8, 9, 10, 11, 16, 17, 18, 19, 15, 12, 13, 14, 20]
+    obs = {"p": list(), "t": list(), "s": list(), "o2_c1": list(), "o2_c2": list(),
+           "o2_t": list(), "fchl": list(), "beta": list(), "fdom": list(), "c": list(),
+           "par": list(), "ed380": list(), "ed412": list(), "ed490": list(),
+           "no3": list()}
+    active_obs = {"p": False, "t": False, "s": False, "o2_c1": False, "o2_c2": False,
+           "o2_t": False, "fchl": False, "beta": False, "fdom": False, "c": False,
+           "par": False, "ed380": False, "ed412": False, "ed490": False,
+           "no3": False}
+    # active_line_obs = list()
+    with open(_filename + '_09.txt', 'r') as f:
+        f.readline()    # Skip first line of header
+        for l in f:
+            s = l.split(' ')
+            # active_line = False
+            for field_id, field_name  in zip(list_field_id, obs.keys()):
+                if s[field_id] == 'NA':
+                    obs[field_name].append(float('nan'))
+                else:
+                    obs[field_name].append(float(s[field_id]))
+                    active_obs[field_name] = True
+            #         if field_name != 'p':
+            #             active_line = True
+            # active_line_obs.append(active_line)
+
+    # Rm empty fields
+    for k, v in active_obs.items():
+        if not v:
+            obs.pop(k, None)
+    # Rm empty lines
+    # for i in range(len(active_line_obs)):
+    #     if not active_line_obs[i]:
+    #         print(i)
+    #         for k in obs.keys():
+    #             del obs[k][i]
+
+    # TODO Read park obs: file 06.txt
+    park_obs = {"dt": list(), "p": list(), "t": list(),
+            "s": list(), "o2_ph": list(), "o2_t": list()}
+
+    d['obs'] = obs
+    d['park_obs'] = park_obs
+    # print(d)
     return d
 
 def import_usr_cfg(_filename):
@@ -632,7 +716,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
     #   _app_cfg <dictionnary> application configuration
     #   _proc_level <string> RAW, L0, L1 or L2 corresponding to the output
     #           directory in which the data should be exported
-    #   _filename <string> name of file of csv file exported
+    #   _filename <string> name of csv file exported
     #       default: <usr_id>.<msg_id>.csv
     #   _sub_dir_user <bool> create a sub directory <usr_id>
     #           into the output directory to place the file
@@ -730,7 +814,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
 
     # Get float and profile id
     foo = _msg_name.split('.')
-    usr_id = 'n' + foo[0]  # Find way to switch to f for APEX
+    usr_id = 'n' + foo[0]  # TODO Find way to switch to f for APEX
     msg_id = foo[1]
     if __debug__:
         print('Running rt(' + _msg_name + ')...', end=' ', flush=True)
@@ -776,7 +860,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
         msg_db = msg_l0
 
     if app_cfg['dashboard']['active']['rt']:
-        # Update dashboard
+        # Update dashboard (json files)
         update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
                                          app_cfg['dashboard']['path']['usr_status']),
                             usr_id, _wmo=usr_cfg['wmo'],
@@ -790,6 +874,8 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
             export_msg_to_json_timeseries(msg_db,
                                           app_cfg['dashboard']['path']['dir'],
                                           usr_id)
+        # Update database of dashboard
+        update_db(msg_db, usr_cfg, app_cfg)
 
     if __debug__:
         print('Done')
@@ -891,6 +977,8 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                         dashboard_rebuild_timeseries = False
                 if msg_id == '000':
                     first_msg_dt = msg_db['dt']
+                    # Update db with information of first profile
+                    update_db(msg_db, usr_cfg, app_cfg)
 
         # Update dashboard with information from last message
         if app_cfg['dashboard']['active']['bash']:
@@ -901,6 +989,9 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                                 _dt_last=msg_db['dt'],
                                 _profile_n=msg_db['profile_id'])
 
+            # Update database of dashboard
+            update_db(msg_db, usr_cfg, app_cfg)
+
         if __debug__:
             print('Done')
 
@@ -910,4 +1001,6 @@ if __name__ == '__main__':
     # for i in range(109):
     #     rt('0572.%03d.msg' % i)
     # rt('0572.001.msg')
-    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    # bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    msg = import_msg_provor('/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/VLFR/lovbio030b/lovbio030b_007_03')
+    msg_l1 = consolidate(msg['obs'])

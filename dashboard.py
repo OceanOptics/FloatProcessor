@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-04-01 16:05:36
+# @Last Modified time: 2017-06-25 20:53:34
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -12,6 +12,7 @@
 import simplejson
 import os
 import numpy as np
+import sqlite3
 from datetime import datetime
 from collections import OrderedDict
 
@@ -93,6 +94,83 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
 
     with open(_filename, 'w') as outfile:
         simplejson.dump(fs, outfile)
+
+def update_db(_msg, _usr_cfg, _app_cfg):
+    # Update database
+    #
+    #
+    # INPUT:
+    #   _msg dictionnary containing float profile
+    #   _usr_cfg <dictionnary> float configuration
+    #   _app_cfg <dictionnary> application configuration
+    #
+    # OUTPUT:
+    #   update metadata in SQLite3 database
+    #       path to database:
+    #   0 if exporation went well
+    #     or
+    #   -1 if error during exportation process
+
+    # Connect to database
+    db = sqlite3.connect(_app_cfg['dashboard']['path']['db'])
+
+    # Check if first profile
+    print(_msg['profile_id'])
+    if _msg['profile_id'] == 0:
+        dt_deploy = _msg['dt']
+        lat_deploy = _msg['lat']
+        lon_deploy = _msg['lon']
+    else:
+        dt_deploy = ''
+        lat_deploy = -9999
+        lon_deploy = -9999
+
+    # Check if float in db
+    cur = db.execute('SELECT id FROM meta WHERE wmo = ?', [_usr_cfg['wmo']])
+    entries = cur.fetchall()
+    if not entries:
+        # New float
+        db.execute('INSERT INTO meta (wmo, lab_id, pi, host,'
+                                      'profile,'
+                                      'dt_deploy, lat_deploy, lon_deploy,'
+                                      'dt_report, lat_report, lon_report,'
+                                      'status)'
+                                      ' VALUES'
+                                      ' (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                     _msg['profile_id'], dt_deploy,lat_deploy,lon_deploy,
+                     _msg['dt'], _msg['lat'], _msg['lon'],
+                     'NA'])
+    else:
+        # Update float
+        if len(entries) > 1:
+            print('WARNING: Float is present more than once in db')
+        if dt_deploy == '':
+            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, host = ?,'
+                                        'profile = ?,'
+                                        'dt_report = ?, lat_report = ?, lon_report = ?,'
+                                        'status = ?'
+                                        'WHERE id = ?',
+                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                         _msg['profile_id'],
+                         _msg['dt'], _msg['lat'], _msg['lon'],
+                         'NA', entries[0][0]])
+        else:
+            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, host = ?,'
+                                        'profile = ?,'
+                                        'dt_deploy = ?, lat_deploy = ?, lon_deploy = ?,'
+                                        'dt_report = ?, lat_report = ?, lon_report = ?,'
+                                        'status = ?'
+                                        'WHERE id = ?',
+                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                         _msg['profile_id'], dt_deploy, lat_deploy, lon_deploy,
+                         _msg['dt'], _msg['lat'], _msg['lon'],
+                         'NA', entries[0][0]])
+    db.commit()
+
+    # Disconnect from database
+    db.close()
+
 
 def export_msg_to_json_profile(_msg, _path, _usr_id, _msg_id):
     # Profile of each cast for all variables

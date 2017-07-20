@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 13:15:32
 # @Last Modified by:   nils
-# @Last Modified time: 2017-03-15 14:02:55
+# @Last Modified time: 2017-06-26 18:10:50
 #
 # This module is developped to calibrate, adjust and compute additional product
 # measurements from biogeochemical floats
@@ -124,6 +124,37 @@ def o2_t_calibration(_o2_t_volt, _coef_t):
   Rt = 100e3 * _o2_t_volt / (3.300000 - _o2_t_volt)
   L = np.log(Rt)
   return 1 / (a[0] + a[1] * L + a[2] * L ** 2 + a[3] * L ** 3 - 273.15)
+
+################
+#  CLEAN DATA  #
+################
+
+def consolidate(_obs):
+  # Consolidate data from provor floats
+  # Remove following artefact:
+  #   - Unique pressure (no replicate pressure)
+  #   - Fill small NaN Gaps
+  #
+  # Function originally designed to format Provor input
+  #
+  # INPUT:
+  #   _obs is a dictionary:
+  #       - keys are parameter
+  #       - values are list of the same size corresponding to each depth
+  #       - the key "p" is mandatory and stand for pressure
+  # OUTPUT:
+  #   _obs consolidated input _obs
+
+  d = dict()
+
+  # Set unique pressure
+  print(len(_obs['p']))
+  d['p'], indeces = np.unique(_obs['p'], return_index=True)
+  print(len(d['p']))
+  print(indeces)
+
+
+  return d
 
 ###################
 #   CORRECTIONS   #
