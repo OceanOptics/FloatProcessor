@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-06-25 20:53:34
+# @Last Modified time: 2017-07-21 14:15:17
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -115,7 +115,6 @@ def update_db(_msg, _usr_cfg, _app_cfg):
     db = sqlite3.connect(_app_cfg['dashboard']['path']['db'])
 
     # Check if first profile
-    print(_msg['profile_id'])
     if _msg['profile_id'] == 0:
         dt_deploy = _msg['dt']
         lat_deploy = _msg['lat']
