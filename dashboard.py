@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-07-21 14:15:17
+# @Last Modified time: 2017-07-25 10:27:00
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -211,16 +211,8 @@ def export_msg_to_json_profile(_msg, _path, _usr_id, _msg_id):
     return -1
 
 def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
-    # Time serie (mean, std and median, 5,95percentile in MLD)
-    #   profile id
-    #   datetime
-    #   MLD
-    #   temperature
-    #   salinity
-    #   chla
-    #   poc
-    #   fdom
-    #   o2
+    # Compute time series within MLD of TIMESERIES_FIELDS
+    #   for each parameter return median, 5 and 95 percentile.
 
     # Check input
     if 'obs' not in _msg.keys():
@@ -242,6 +234,19 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
             fs[f] = list()
             fs[f + '_std'] = list()
 
+    # Get selection above MLD
+    if 'mld' in _msg.keys():
+        mld = _msg['mld']
+    else:
+        print('ERROR: Missing key mld in msg.')
+        return -1
+    if 'p' in _msg['obs'].keys():
+        p = _msg['obs']['p']
+    else:
+        print('ERROR: Missing key p in msg[obs].')
+        return -1
+    sel = p <= mld
+
     # Extract data
     for f in TIMESERIES_FIELDS:
         if f in _msg.keys():
@@ -249,8 +254,9 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
             fs[f].append(_msg[f])
         elif f in _msg['obs'].keys():
             # average in MLD
-            fs[f].append(np.nanmedian(_msg['obs'][f]))
-            fs[f+'_std'].append(np.nanstd(_msg['obs'][f]))
+            fs[f].append(np.nanmedian(_msg['obs'][f][sel]))
+            fs[f+'_prtl5'].append(np.percentile(_msg['obs'][f][sel], 5))
+            fs[f+'_prtl95'].append(np.percentile(_msg['obs'][f][sel], 95))
         elif f in TIMESERIES_FIELDS_MANDATORY:
             print('ERROR: Missing key ' + f + ' in msg|msg[obs].')
             return -1

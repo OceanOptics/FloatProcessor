@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-06-26 18:02:51
+# @Last Modified time: 2017-07-25 10:29:00
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -706,7 +706,7 @@ def process_L2(_l1, _usr_cfg):
 
 
 def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
-               _filename=None, _sub_dir_user=False):
+               _filename=None, _sub_dir_user=True):
     # Save profile (_msg) in a csv file
     #
     #
@@ -720,7 +720,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
     #       default: <usr_id>.<msg_id>.csv
     #   _sub_dir_user <bool> create a sub directory <usr_id>
     #           into the output directory to place the file
-    #       default: False
+    #       default: True
     #
     # OUTPUT:
     #   csv file in
