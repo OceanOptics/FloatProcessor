@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-07-25 10:27:00
+# @Last Modified time: 2017-07-25 10:40:55
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -232,7 +232,8 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         fs = dict()
         for f in TIMESERIES_FIELDS:
             fs[f] = list()
-            fs[f + '_std'] = list()
+            fs[f + '_prtl5'] = list()
+            fs[f + '_prtl95'] = list()
 
     # Get selection above MLD
     if 'mld' in _msg.keys():
