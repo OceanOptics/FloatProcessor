@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-08-05 10:57:48
+# @Last Modified time: 2017-08-06 07:32:14
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -129,7 +129,7 @@ def update_db(_msg, _usr_cfg, _app_cfg):
     entries = cur.fetchall()
     if not entries:
         # New float
-        db.execute('INSERT INTO meta (wmo, lab_id, pi, project,model,'
+        db.execute('INSERT INTO meta (wmo, lab_id, pi, project, model,'
                                       'profile,'
                                       'dt_deploy, lat_deploy, lon_deploy,'
                                       'dt_report, lat_report, lon_report,'

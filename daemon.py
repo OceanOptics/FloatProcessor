@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2017-03-05 20:40:00
 # @Last Modified by:   nils
-# @Last Modified time: 2017-07-21 14:26:07
+# @Last Modified time: 2017-08-06 07:31:22
 
 import sys
 import os
@@ -11,7 +11,7 @@ from process import rt, import_app_cfg
 
 
 # Load application configuration
-print('FloatProcess v0.1.1')
+print('FloatProcess v0.2.0')
 print('Starting daemon for real-time processing')
 if len(sys.argv) != 2:
     print('Need 1 arguments:\n' +
