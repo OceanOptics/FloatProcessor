@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-07-25 10:40:55
+# @Last Modified time: 2017-08-05 10:57:48
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -129,14 +129,15 @@ def update_db(_msg, _usr_cfg, _app_cfg):
     entries = cur.fetchall()
     if not entries:
         # New float
-        db.execute('INSERT INTO meta (wmo, lab_id, pi, host,'
+        db.execute('INSERT INTO meta (wmo, lab_id, pi, project,model,'
                                       'profile,'
                                       'dt_deploy, lat_deploy, lon_deploy,'
                                       'dt_report, lat_report, lon_report,'
                                       'status)'
                                       ' VALUES'
-                                      ' (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                                      ' (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'],
+                     _usr_cfg['project'],_usr_cfg['model'],
                      _msg['profile_id'], dt_deploy,lat_deploy,lon_deploy,
                      _msg['dt'], _msg['lat'], _msg['lon'],
                      'NA'])
@@ -145,23 +146,25 @@ def update_db(_msg, _usr_cfg, _app_cfg):
         if len(entries) > 1:
             print('WARNING: Float is present more than once in db')
         if dt_deploy == '':
-            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, host = ?,'
-                                        'profile = ?,'
+            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, project = ?,'
+                                        'model = ?, profile = ?,'
                                         'dt_report = ?, lat_report = ?, lon_report = ?,'
                                         'status = ?'
                                         'WHERE id = ?',
-                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'],
+                         _usr_cfg['project'], _usr_cfg['model'],
                          _msg['profile_id'],
                          _msg['dt'], _msg['lat'], _msg['lon'],
                          'NA', entries[0][0]])
         else:
-            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, host = ?,'
-                                        'profile = ?,'
+            db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, project = ?,'
+                                        'model = ?, profile = ?,'
                                         'dt_deploy = ?, lat_deploy = ?, lon_deploy = ?,'
                                         'dt_report = ?, lat_report = ?, lon_report = ?,'
                                         'status = ?'
                                         'WHERE id = ?',
-                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'], 'UMaine',
+                        [int(_usr_cfg['wmo']), _usr_cfg['user_id'], _usr_cfg['pi'],
+                         _usr_cfg['project'], _usr_cfg['model'],
                          _msg['profile_id'], dt_deploy, lat_deploy, lon_deploy,
                          _msg['dt'], _msg['lat'], _msg['lon'],
                          'NA', entries[0][0]])
@@ -171,7 +174,7 @@ def update_db(_msg, _usr_cfg, _app_cfg):
     db.close()
 
 
-def export_msg_to_json_profile(_msg, _path, _usr_id, _msg_id):
+def export_msg_to_json_profile(_msg, _path, _usr_id):
     # Profile of each cast for all variables
     #   p
     #   par
@@ -182,13 +185,15 @@ def export_msg_to_json_profile(_msg, _path, _usr_id, _msg_id):
     #   fdom
     #   o2
 
+
     # Check input
     if 'obs' not in _msg.keys():
         print('ERROR: Missing key obs in msg.')
         return -1
     # Set filename
     filename = os.path.join(_path, _usr_id + '.' +
-                            _msg_id + '.profile.json')
+                            '{0:03d}'.format(_msg['profile_id']) +
+                            '.profile.json')
     # Extract data
     fs = dict()
     for f in PROFILE_FIELDS:
@@ -219,7 +224,7 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         print('ERROR: Missing key obs in msg.')
         return -1
     if 'mld_index' not in _msg.keys():
-        print('ERROR: Missing key mld_index in msg ' + str(_msg['profile_id']) + '.')
+        print('ERROR: Missing key mld_index in msg ' + '{0:03d}'.format(_msg['profile_id'])  + '.')
         return -1
     # Set filename
     filename = os.path.join(_path, _usr_id + '.timeseries.json')
@@ -247,7 +252,11 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         print('ERROR: Missing key p in msg[obs].')
         return -1
     sel = p <= mld
-
+    # If no values above the MLD, compute for shallowest value
+    if not any(sel):
+        i = np.argmin(p)
+        sel[i] = True
+        print('WARNING: No depth above MLD, using p=%.2f' % p[i])
     # Extract data
     for f in TIMESERIES_FIELDS:
         if f in _msg.keys():

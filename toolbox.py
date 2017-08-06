@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 13:15:32
 # @Last Modified by:   nils
-# @Last Modified time: 2017-06-26 18:10:50
+# @Last Modified time: 2017-08-05 12:55:50
 #
 # This module is developped to calibrate, adjust and compute additional product
 # measurements from biogeochemical floats
@@ -147,13 +147,26 @@ def consolidate(_obs):
 
   d = dict()
 
-  # Set unique pressure
-  print(len(_obs['p']))
-  d['p'], indeces = np.unique(_obs['p'], return_index=True)
-  print(len(d['p']))
-  print(indeces)
-
-
+  # build new depth array
+  #   unique depth and downsample by factor of 2
+  p = np.array(_obs['p'])
+  d['p'] = np.unique(p)[0::2]
+  # for each parameter get nearest value at each depth
+  for k, v in _obs.items():
+    # Skip pressure
+    if k == 'p':
+      continue
+    # Get selection without nan
+    npv = np.array(v)
+    sel = np.logical_not(np.isnan(npv))
+    if np.sum(sel) > 2:
+      # Interpolate with nearest value (keep intensity of spikes)
+      f = interp1d(p[sel], npv[sel], kind='nearest',
+                   bounds_error=False, fill_value=np.NaN)
+      d[k] = f(d['p'])
+    else:
+      print('WARNING: Unable to consolidate ' + k + ' profile.')
+      d[k] = np.full(len(d['p']), np.nan)
   return d
 
 ###################
@@ -249,8 +262,7 @@ def npq_correction(_p, _fchl, _depth_start_correct, _method="Xing2",
   if _method == "Xing":
     # Extend to the surface the concentration of chlorophyll a at
     # depth_start_correct
-    f = interp1d(p, fchl)
-    fchl[0:index_start_correct + 1] = f(_depth_start_correct)
+    fchl[0:index_start_correct + 1] = np.interp(_depth_start_correct, p, fchl)
   elif _method == "Xing2":
     # Extend to the surface the median of the concentration of chlorophyll a
     #   of the n points arround depth_start_correct
@@ -358,23 +370,33 @@ def estimate_mld(_p, _sigma, _criterion=0.03, _p_0=10):
   # Keep unique set of pressure with matching density anomaly
   p, i = np.unique(_p, return_index=True)
   sigma = _sigma[i]
+  # Ignore nan values
+  sel = np.logical_not(np.isnan(sigma))
+  p = p[sel]
+  sigma = sigma[sel]
 
-  # Get density anomaly at _p_0
-  sigma_0 = np.interp(_p_0, p, sigma)
+  # Check profile is not empty
+  if len(p) > 2:
+    # Get density anomaly at _p_0
+    sigma_0 = np.interp(_p_0, p, sigma)
 
-  # Find starting index
-  i = np.argmin(np.absolute(p - _p_0))
-  # Find index of density anomaly
-  mld_index = np.argmin(abs(sigma[i:] - (sigma_0 + _criterion))) + i
-  # Other method with same result, (need to be benchmarked)
-  # while i < len(sigma) and sigma[i] <= sigma_0 + _criterion:
-  #   i = i + 1;
-  # mld_index = i - 1;
-  # Find MLD
-  mld = np.interp(sigma_0 + _criterion, sigma[mld_index-1:], p[mld_index-1:])
-  # Less accurate method but faster
-  # mld = p[mld_index]
-  return mld, mld_index
+    # Find starting index
+    i = np.argmin(np.absolute(p - _p_0))
+    # Find index of density anomaly
+    mld_index = np.argmin(abs(sigma[i:] - (sigma_0 + _criterion))) + i
+    # Other method with same result, (need to be benchmarked)
+    # while i < len(sigma) and sigma[i] <= sigma_0 + _criterion:
+    #   i = i + 1;
+    # mld_index = i - 1;
+    # Find MLD
+    mld = np.interp(sigma_0 + _criterion, sigma[mld_index-1:], p[mld_index-1:])
+    # Less accurate method but faster
+    # mld = p[mld_index]
+    return mld, mld_index
+
+  else:
+    print('WARNING: Not enough data to estimate MLD')
+    return -1, -1
 
 
 def estimate_zeu(_p, _par):
@@ -393,8 +415,7 @@ def estimate_zeu(_p, _par):
 
   if np.nanmin(par) < par_zeu:
     # Get euphotic depth by linear interpolation
-    f = interp1d(par, p)
-    Zeu = f(par_zeu)
+    Zeu = np.interp(par_zeu, par, p)
   else:
     Zeu = float('nan')
   return Zeu

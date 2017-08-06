@@ -7,6 +7,7 @@
     "path":{
       "usr_cfg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/param/",
       "msg":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/RAW_EOT/",
+      "msg_provor":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/VLFR/",
       "out":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/",
       "level":["L0", "L1", "L2"],
       "log":"/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/FloatProcess.log",
@@ -20,9 +21,9 @@
       "rt":1
     },
     "path":{
-      "dir":"/Users/nils/Documents/Code/www/UMaine/Float_Monitoring/data/",
+      "dir":"/Users/nils/Documents/Code/Python/FloatExplorer/static/data/",
       "usr_status":"NAAMES_float_status.json",
-      "db":"/tmp/float_explorer.db"
+      "db":"/Users/nils/Documents/Code/Python/FloatExplorer/static/data/float_explorer.db"
     }
   }
 }

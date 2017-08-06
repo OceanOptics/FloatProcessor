@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-07-25 10:29:00
+# @Last Modified time: 2017-08-05 10:53:23
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -30,10 +30,6 @@ from dashboard import *
 # Backscattering theta and lambda
 MCOM_BETA_CENTROID_ANGLE = 150
 MCOM_BETA_WAVELENGTH = 700
-FLBB_BETA_CENTROID_ANGLE = 142
-FLBB_BETA_WAVELENGTH = 700
-FLNTU_BETA_CENTROID_ANGLE = 142
-FLNTU_BETA_WAVELENGTH = 700
 ECO1C_BETA_CENTROID_ANGLE = 124
 ECO1C_BETA_WAVELENGTH = 700
 ECO2C_BETA_CENTROID_ANGLE = 142
@@ -55,7 +51,7 @@ LIST_SENSOR_SPECIAL_FIELDS = ['model', 'sn', 'fw',
 ###################
 
 
-def import_msg(filename):
+def import_navis_msg(filename):
     # Simple function to import a file from  Navis float
     #   Convert binary data from raw msg to ASCII (L0)
     valid_obs_len = [60, 72]
@@ -249,7 +245,7 @@ def import_msg(filename):
     f.close()
     return d
 
-def import_msg_provor(_filename):
+def import_provor_msg(_filename):
     # Import a file from NKE Provor float
     #   Read data ASCII data from multiple files:
     #       + read specified cast
@@ -457,7 +453,7 @@ def process_L1(_msg, _usr_cfg):
     #   for each sensor (_usr_cfg['sensors'])
     for sensor_key, sensor_val in _usr_cfg['sensors'].items():
         if sensor_key == 'CTD':
-            if sensor_val['model'] == 'SBE41CP':
+            if sensor_val['model'] in ['SBE41CP', 'SBE41C']:
                 for var_key, var_val in sensor_val.items():
                     # Skip special fields
                     if var_key in LIST_SENSOR_SPECIAL_FIELDS:
@@ -493,6 +489,8 @@ def process_L1(_msg, _usr_cfg):
                 l1['obs']['o2_c'] = o2_phase_calibration(
                     np.array(_msg['obs']['o2_ph'], dtype='float'),
                     l1['obs']['o2_t'], sensor_val['o2_ph'])
+            elif sensor_val['model'] == 'Oxygen Optode 4330':
+                print('WARNING: Oxygen Optode 4330 not supported yet.')
             else:
                 print('ERROR: Unknow O2 Model ' + sensor_val['model'])
                 return -1
@@ -520,14 +518,15 @@ def process_L1(_msg, _usr_cfg):
                 if ('par' not in sensor_val.keys() or
                     'tilt' not in sensor_val.keys() or
                     'tilt_std' not in sensor_val.keys()):
-                    print('ERROR: Missing variable o2_t or o2_ph'
+                    print('ERROR: Missing variable par, tilt, or tilt_std'
                           ' in <usr>_cfg.json file.')
                     return -1
                 # Check that field is in profile from float
                 if ('par' not in _msg['obs'].keys() or
                     'tilt' not in _msg['obs'].keys() or
                     'tilt_std' not in _msg['obs'].keys()):
-                    print('ERROR: Missing variable o2_t or o2_ph in msg.')
+                    print('ERROR: Missing variable par, tilt, or tilt_std'
+                          ' in msg.')
                     return -1
                 # Apply calibration (if necessary)
                 l1['obs']['par'] = radiometer_calibration(
@@ -537,6 +536,20 @@ def process_L1(_msg, _usr_cfg):
                                              dtype='float')
                 l1['obs']['tilt_std'] = np.array(_msg['obs']['tilt_std'],
                                                  dtype='float')
+            elif sensor_val['model'] == 'OCR504':
+                for var_key, var_val in sensor_val.items():
+                    # Skip special fields
+                    if var_key in LIST_SENSOR_SPECIAL_FIELDS:
+                        continue
+                    # Check that field is in profile from float
+                    if var_key not in _msg['obs'].keys():
+                        print('ERROR: Missing variable ' + var_key +
+                              ' in msg.')
+                        return -1
+                    # Apply calibration
+                    l1['obs'][var_key] = radiometer_calibration(
+                        np.array(_msg['obs'][var_key], dtype='float'),
+                        var_val)
             else:
                 print('ERROR: Unknow Radiometer Model ' + sensor_val['model'])
                 return -1
@@ -650,8 +663,11 @@ def process_L2(_l1, _usr_cfg):
                 beta_theta = MCOM_BETA_CENTROID_ANGLE
                 beta_lambda = MCOM_BETA_WAVELENGTH
             elif _usr_cfg['sensors']['ECO']['model'] == 'FLBB':
-                beta_theta = FLBB_BETA_CENTROID_ANGLE
-                beta_lambda = FLBB_BETA_WAVELENGTH
+                beta_theta = ECO2C_BETA_CENTROID_ANGLE
+                beta_lambda = ECO2C_BETA_WAVELENGTH
+            elif _usr_cfg['sensors']['ECO']['model'] == 'FLBBCD':
+                beta_theta = ECO3C_BETA_CENTROID_ANGLE
+                beta_lambda = ECO3C_BETA_WAVELENGTH
             else:
                 print('ERROR: Unknow centroid angle and wavelength of sensor')
                 return -1
@@ -812,25 +828,33 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
     #     or
     #   -1 if error during exportation process
 
-    # Get float and profile id
-    foo = _msg_name.split('.')
-    usr_id = 'n' + foo[0]  # TODO Find way to switch to f for APEX
-    msg_id = foo[1]
     if __debug__:
         print('Running rt(' + _msg_name + ')...', end=' ', flush=True)
 
-    # Check arguments
+    # Load application configuration
+    app_cfg = import_app_cfg(_app_cfg_name)
+
+    # Load float data
+    if _msg_name[-3:] == 'msg':
+        # Navis
+        foo = _msg_name.split('.')
+        usr_id = 'n' + foo[0]
+        msg_id = foo[1]
+        path2msg = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
+                                    usr_id, _msg_name))
+    elif _msg_name[-3:] == 'txt':
+        # PROVOR
+        foo = _msg_name.split('_')
+        usr_id = foo[0]
+        msg_id = foo[1] + foo[2]
+        msg_l0 = import_provor_msg(os.path.join(app_cfg['process']['path']['msg_provor'],
+                                  usr_id, _msg_name[0:-7]))
+
+    # Load user configuration data
     if _usr_cfg_name is None:
         _usr_cfg_name = usr_id + '_cfg.json'
-    # if _dark_fl_name is None:
-    #     _dark_fl_name = usr_id + '_dark_fl.csv'
-
-    # Load data
-    app_cfg = import_app_cfg(_app_cfg_name)
     usr_cfg = import_usr_cfg(os.path.join(app_cfg['process']['path']['usr_cfg'],
                                           _usr_cfg_name))
-    msg_l0 = import_msg(os.path.join(app_cfg['process']['path']['msg'],
-                                     usr_id, _msg_name))
 
     if app_cfg['process']['active']['rt'] and len(msg_l0['obs']['p']) > 0:
         # Process data
@@ -859,6 +883,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
     else:
         msg_db = msg_l0
 
+
     if app_cfg['dashboard']['active']['rt']:
         # Update dashboard (json files)
         update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
@@ -870,7 +895,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
             # If profile not empty
             export_msg_to_json_profile(msg_db,
                                        app_cfg['dashboard']['path']['dir'],
-                                       usr_id, msg_id)
+                                       usr_id)
             export_msg_to_json_timeseries(msg_db,
                                           app_cfg['dashboard']['path']['dir'],
                                           usr_id)
@@ -903,13 +928,16 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
 
     # Check input
     if _usr_cfg_names == []:
+        usr_cfg_names = list()
         for usr_id in _usr_ids:
-            _usr_cfg_names.append(usr_id + '_cfg.json')
+            usr_cfg_names.append(usr_id + '_cfg.json')
+    else:
+        usr_cfg_names = _usr_cfg_names
 
     # Load application configuration
     app_cfg = import_app_cfg(_app_cfg_name)
     # Run each user
-    for (usr_id, usr_cfg_name) in zip(_usr_ids, _usr_cfg_names):
+    for (usr_id, usr_cfg_name) in zip(_usr_ids, usr_cfg_names):
         if __debug__:
             print('Bash Processing of ' + usr_id + '...', end=' ', flush=True)
         # Load user configuration
@@ -923,23 +951,40 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
         first_msg_dt = 'undefined';
 
         # List all messages
-        msg_list = [name for name in os.listdir(os.path.join(
-                    app_cfg['process']['path']['msg'],
-                    usr_id)) if name[-4:] == '.msg']
+        if 'Navis' in usr_cfg['model']:
+            msg_list = [name for name in os.listdir(os.path.join(
+                        app_cfg['process']['path']['msg'],
+                        usr_id)) if name[-4:] == '.msg']
+        elif 'PROVOR' in usr_cfg['model']:
+            msg_list = [name[0:-7] for name in os.listdir(os.path.join(
+                        app_cfg['process']['path']['msg_provor'],
+                        usr_id)) if name[-7:] == '_09.txt']
+        else:
+            print('ERROR: Unknow float model')
+            return -1
         # Sort list as os.listdir return elements in arbitraty order
         msg_list.sort()
 
         for msg_name in msg_list:
             # Load message
-            msg_l0 = import_msg(os.path.join(app_cfg['process']['path']['msg'],
-                                             usr_id, msg_name))
+            if 'Navis' in usr_cfg['model']:
+                msg_l0 = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
+                                                 usr_id, msg_name))
+            elif 'PROVOR' in usr_cfg['model']:
+                msg_l0 = import_provor_msg(os.path.join(app_cfg['process']['path']['msg_provor'],
+                                                 usr_id, msg_name))
+                msg_l0['obs'] = consolidate(msg_l0['obs'])
+            else:
+                print('ERROR: Unknow float model')
+                return -1
 
             if app_cfg['process']['active']['bash'] and len(msg_l0['obs']['p']) > 0:
                 # Process data
                 msg_l1 = process_L1(msg_l0, usr_cfg)  # counts to SI units
                 if msg_l1 == -1:
                     print('ERROR: Unable to process to level 1')
-                    return -1
+                    print('\tSkipping profile ' + '{0:03d}'.format(msg_db['profile_id']))
+                    continue
                 msg_l2 = process_L2(msg_l1, usr_cfg)  # apply corrections
                 if msg_l2 == -1:
                     print('ERROR: Unable to process to level 2')
@@ -963,25 +1008,24 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
 
             # Update dashboard
             if app_cfg['dashboard']['active']['bash']:
-                msg_id = msg_name.split('.')[1]
                 if len(msg_db['obs']['p']) > 0:
                     # if profile not empty
                     export_msg_to_json_profile(msg_db,
                                        app_cfg['dashboard']['path']['dir'],
-                                       usr_id, msg_id)
+                                       usr_id)
                     if 0 == export_msg_to_json_timeseries(msg_db,
                                           app_cfg['dashboard']['path']['dir'],
                                           usr_id,
                                           _reset=dashboard_rebuild_timeseries):
                         # Disable time series reset as we just did it
                         dashboard_rebuild_timeseries = False
-                if msg_id == '000':
+                if msg_db['profile_id'] == 0:
                     first_msg_dt = msg_db['dt']
                     # Update db with information of first profile
                     update_db(msg_db, usr_cfg, app_cfg)
 
         # Update dashboard with information from last message
-        if app_cfg['dashboard']['active']['bash']:
+        if msg_list and app_cfg['dashboard']['active']['bash']:
             update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
                                              app_cfg['dashboard']['path']['usr_status']),
                                 usr_id, _wmo=usr_cfg['wmo'],
@@ -1001,6 +1045,6 @@ if __name__ == '__main__':
     # for i in range(109):
     #     rt('0572.%03d.msg' % i)
     # rt('0572.001.msg')
-    # bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
-    msg = import_msg_provor('/Users/nils/Documents/UMaine/Lab/data/NAAMES/floats/VLFR/lovbio030b/lovbio030b_007_03')
-    msg_l1 = consolidate(msg['obs'])
+    # rt('lovbio032b_010_00_09.txt')
+    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])
