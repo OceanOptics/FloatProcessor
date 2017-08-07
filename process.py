@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-08-05 10:53:23
+# @Last Modified time: 2017-08-06 21:25:31
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -840,7 +840,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
         foo = _msg_name.split('.')
         usr_id = 'n' + foo[0]
         msg_id = foo[1]
-        path2msg = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
+        msg_l0 = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
                                     usr_id, _msg_name))
     elif _msg_name[-3:] == 'txt':
         # PROVOR
