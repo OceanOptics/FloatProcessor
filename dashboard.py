@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 16:40:35
 # @Last Modified by:   nils
-# @Last Modified time: 2017-08-06 07:32:14
+# @Last Modified time: 2017-08-10 08:58:29
 
 # DASHBOARD: update json files for web dashboard
 #     float_list.json
@@ -15,6 +15,7 @@ import numpy as np
 import sqlite3
 from datetime import datetime
 from collections import OrderedDict
+from geojson import Feature, Point, LineString, FeatureCollection
 
 ######################
 #  DASHBOARD FIELDS  #
@@ -285,5 +286,59 @@ def export_msg_to_json_overview():
     # Overview figure with depth vs time vs observations
     pass
 
-def export_msg_to_json_map():
-    pass
+def export_msg_to_json_map(_msg, _path, _usr_id, _reset=False):
+    # Open current geojson file, add input parameters
+
+    # Set filename
+    filename = os.path.join(_path, _usr_id + '.geo.json')
+
+    # Load previous positions
+    if os.path.isfile(filename) and not _reset:
+        with open(filename) as data_file:
+            fc = simplejson.load(data_file)
+            all_pos = []
+            # Read previous position from LineString
+            for f in fc['features']:
+                if (f['geometry']['type'] == 'LineString' and
+                    f['properties']['usr_id'] == _usr_id):
+                    all_pos = f['geometry']['coordinates']
+                    break
+            # If no previous position found in LineString
+            if not all_pos:
+                # Read previous position from Point
+                for f in fc['features']:
+                    if (f['geometry']['type'] == 'Point' and
+                        f['properties']['usr_id'] == _usr_id):
+                        all_pos = [f['geometry']['coordinates']]
+                        break
+    else:
+        all_pos = []
+
+    # Make Point feature for last position
+    pos = (_msg['lon'], _msg['lat'])
+    feature_last_position = Feature(geometry=Point(pos),
+                            properties={'usr_id': _usr_id,
+                                        'msg_id': _msg['profile_id'],
+                                        'dt': _msg['dt']})
+
+    # Make LineString feature if more than one position
+    if not all_pos:
+        feature_collection = FeatureCollection([feature_last_position])
+    else:
+        all_pos.append(pos)
+        feature_all_positions = Feature(geometry=LineString(all_pos),
+                                properties={'usr_id': _usr_id})
+        feature_collection = FeatureCollection([feature_last_position,
+                                                feature_all_positions])
+
+    # Write json
+    with open(filename, 'w') as outfile:
+        simplejson.dump(feature_collection, outfile,
+                        ignore_nan=True, default=datetime.isoformat)
+        return 0
+    return -1
+
+# if __name__ == '__main__':
+#     from process import rt
+#     rt('0572.001.msg')
+
