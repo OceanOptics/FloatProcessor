@@ -9,13 +9,15 @@
 #     float_status.json
 #     google_map.json
 
-import simplejson
+try: import simplejson as json
+except ImportError: import json
 import os
 import numpy as np
 import sqlite3
 from datetime import datetime
 from collections import OrderedDict
 from geojson import Feature, Point, LineString, FeatureCollection
+from scipy.interpolate import interp1d
 
 ######################
 #  DASHBOARD FIELDS  #
@@ -26,6 +28,21 @@ PROFILE_FIELDS_MANDATORY = ['p','t','s','chla']
 # fields for timeseries
 TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla','bbp','fdom','o2_c']
 TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s', 'chla']
+# fields for contour plot
+CONTOUR_PLOT_FIELDS = ['par','t','s','chla','bbp','fdom','o2_c']
+CONTOUR_PLOT_FIELDS_MANDATORY = ['t', 'chla']
+
+FIELD_NAME = {'p':'Pressure', 'par':'PAR', 't':'Temperature', 's':'Salinity',
+              'chla':'Chlorophyll a', 'bbp':'bbp', 'fdom':'FDOM', 'o2_c':'O2'}
+FIELD_LABEL = {'p':'Pressure (dBar)', 'par':'PAR (umol photons m<sup>-2</sup> s<sup>-1</sup>)',
+               't':'Temperature (&deg;C)', 's':'Salinity (ppt)',
+               'chla':'Chlorophyll <i>a</i> (mg m<sup>-3</sup>)',
+               'bbp':'b<sub>bp</sub>(700) (m<sup>-1</sup>)',
+               'fdom':'FDOM (mg m<sup>-3</sup>)',
+               'o2_c':'O<sub>2</sub> (mg m<sup>-3</sup>)'}
+FIELD_COLOR_SCALE = {'par':'YIGnBu', 't':'RdBu', 's':'YIGnBu', 'chla':'Greens', 'bbp':'Jet', 'fdom':'Portland', 'o2_c':'YIGnBu'}
+FIELD_REVERSE_SCALE = {'par':False, 't':False, 's':False, 'chla':True, 'bbp':False, 'fdom':False, 'o2_c':False}
+FIELD_PRECISION = {'par':'.2f', 't':'.2f', 's':'.4f', 'chla':'.3f', 'bbp':'.5f', 'fdom':'.3f', 'o2_c':'.2f'}
 
 def update_float_status(_filename, _float_id, _wmo='undefined',
                         _profile_n=-1, _dt_last='undefined',
@@ -36,11 +53,12 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
     # EXAMPLE:
     #   update_float_status('float_status.json', 'n0572', _wmo='5902462',
     #     _dt_last=datetime.today())
+    # DEPRECATED
 
     # load current float status
     if os.path.isfile(_filename) and not _reset:
         with open(_filename) as data_file:
-            fs = simplejson.load(data_file, object_pairs_hook=OrderedDict)
+            fs = json.load(data_file, object_pairs_hook=OrderedDict)
         if _float_id not in fs.keys():
             fs[_float_id] = dict()
             fs[_float_id]['float_id'] = _float_id
@@ -94,7 +112,7 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
         fs[_float_id]['status'] = 'active'
 
     with open(_filename, 'w') as outfile:
-        simplejson.dump(fs, outfile)
+        json.dump(fs, outfile)
 
 def update_db(_msg, _usr_cfg, _app_cfg):
     # Update database
@@ -195,6 +213,8 @@ def export_msg_to_json_profile(_msg, _path, _usr_id):
     filename = os.path.join(_path, _usr_id + '.' +
                             '{0:03d}'.format(_msg['profile_id']) +
                             '.profile.json')
+    # Set precision
+    json.encoder.FLOAT_REPR = lambda o: format(o, '.5f')
     # Extract data
     fs = dict()
     for f in PROFILE_FIELDS:
@@ -212,7 +232,7 @@ def export_msg_to_json_profile(_msg, _path, _usr_id):
 
     # Write json
     with open(filename, 'w') as outfile:
-        simplejson.dump(fs, outfile, ignore_nan=True,default=datetime.isoformat)
+        json.dump(fs, outfile, ignore_nan=True,default=datetime.isoformat)
         return 0
     return -1
 
@@ -229,11 +249,12 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         return -1
     # Set filename
     filename = os.path.join(_path, _usr_id + '.timeseries.json')
-
+    # Set precision
+    json.encoder.FLOAT_REPR = lambda o: format(o, '.5f')
     # Load existing timeseries (if available)
     if os.path.isfile(filename) and not _reset:
         with open(filename) as data_file:
-            fs = simplejson.load(data_file)
+            fs = json.load(data_file)
     else:
         fs = dict()
         for f in TIMESERIES_FIELDS:
@@ -274,28 +295,95 @@ def export_msg_to_json_timeseries(_msg, _path, _usr_id, _reset=False):
         else:
             fs[f].append(np.NaN)
 
-    # Remove duplicates and sort data by profile id
+    # TODO Remove duplicates and sort data by profile id
 
     # Write json
     with open(filename, 'w') as outfile:
-        simplejson.dump(fs, outfile, ignore_nan=True,default=datetime.isoformat)
+        json.dump(fs, outfile, ignore_nan=True,default=datetime.isoformat)
         return 0
     return -1
 
-def export_msg_to_json_overview():
-    # Overview figure with depth vs time vs observations
-    pass
+def export_msg_to_json_contour_plot(_msg, _path, _usr_id, _reset=False):
+    # Open current contour_plot file of each variable and add current profile
+    # Used to generate contour plot x: time; y: pressure; c: observation
+    #
+    # TODO Dynamic depth range (250, 500, 1000, 1500, 2000), currently fix
+
+    # Check input
+    if 'obs' not in _msg.keys():
+        print('ERROR: Missing key obs in msg.')
+        return -1
+
+    # For each variable
+    for f in CONTOUR_PLOT_FIELDS:
+        if f in _msg['obs'].keys():
+            # Set filename
+            filename = os.path.join(_path, _usr_id + '.' + f + '.contour.json')
+
+            # Load existing contour plot (if available)
+            if os.path.isfile(filename) and not _reset:
+                with open(filename) as data_file:
+                    fs = json.load(data_file)
+            else:
+                fs = dict('')
+                fs['name'] = FIELD_NAME[f]
+                fs['label'] = FIELD_LABEL[f]
+                fs['colorscale'] = FIELD_COLOR_SCALE[f]
+                fs['reversescale'] = FIELD_REVERSE_SCALE[f]
+                fs['dt'] = list()
+                # set p according to deepest point of first profile
+                if f == 'par':
+                    fs['p'] = list(range(0,251,2))
+                else:
+                    fs['p'] = list(range(0,1001,2)) 
+                fs['mld'] = list()
+                # set a 2d array with numpy
+                fs['data'] = list(list() for i in range(len(fs['p'])))
+
+            # Update dt
+            fs['dt'].append(_msg['dt'])
+
+            # Update MLD
+            fs['mld'].append(_msg['mld'])
+
+            # Interpolate profile on p grid
+            npv = np.array(_msg['obs'][f])
+            sel = np.logical_not(np.isnan(_msg['obs'][f]))
+            if np.sum(sel) > 2:
+                # Interpolate with nearest value (keep intensity of spikes)
+                fun = interp1d(_msg['obs']['p'][sel], npv[sel], kind='nearest',
+                           bounds_error=False, fill_value=np.NaN)
+                var_interp = fun(fs['p'])
+            else:
+                print('WARNING: Unable to consolidate ' + str(_msg['float_id']) + '.' + str(_msg['profile_id']) + '.' + f)
+                var_interp = np.full(len(_msg['obs']['p']), np.nan)
+
+            # Update data matrix
+            for i in range(len(var_interp)):
+                fs['data'][i].append(var_interp[i])
+
+            # Set precision
+            json.encoder.FLOAT_REPR = lambda o: format(o, FIELD_PRECISION[f])
+
+            # Write json profile
+            with open(filename, 'w') as outfile:
+                json.dump(fs, outfile, ignore_nan=True,default=datetime.isoformat)
+        elif f in CONTOUR_PLOT_FIELDS_MANDATORY:
+            print('ERROR: Missing key ' + f + ' in msg|msg[obs].')
+            return -1
+    return  0
 
 def export_msg_to_json_map(_msg, _path, _usr_id, _reset=False):
     # Open current geojson file, add input parameters
 
     # Set filename
     filename = os.path.join(_path, _usr_id + '.geo.json')
-
+    # Set precision
+    json.encoder.FLOAT_REPR = lambda o: format(o, '.3f')
     # Load previous positions
     if os.path.isfile(filename) and not _reset:
         with open(filename) as data_file:
-            fc = simplejson.load(data_file)
+            fc = json.load(data_file)
             all_pos = []
             # Read previous position from LineString
             for f in fc['features']:
@@ -333,12 +421,12 @@ def export_msg_to_json_map(_msg, _path, _usr_id, _reset=False):
 
     # Write json
     with open(filename, 'w') as outfile:
-        simplejson.dump(feature_collection, outfile,
+        json.dump(feature_collection, outfile,
                         ignore_nan=True, default=datetime.isoformat)
         return 0
     return -1
 
-# if __name__ == '__main__':
-#     from process import rt
-#     rt('0572.001.msg')
+if __name__ == '__main__':
+    from process import bash
+    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
 

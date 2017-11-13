@@ -2,13 +2,13 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-08-06 07:31:16
+# @Last Modified time: 2017-08-10 10:15:03
 
 import sys
 from process import bash, rt
 
 
-print('FloatProcess v0.2.0')
+print('FloatProcess v0.2.2')
 if len(sys.argv) < 4:
     print('Need >3 arguments:\n' +
           '\t<string> processing mode (bash or rt)\n' +

@@ -13,6 +13,7 @@ Packages required and tested version:
   - simplejson 3.10.0 (original json package does not support NaN)
   - gsw v3.0.3 (compute seawater density)
   - pyinotify v0.9.6 [optional, to run real-time monitoring files]
+  - geojson v1.3.5
 
 Setup the configuration file for the processing app:
   *coming soon*
@@ -54,8 +55,9 @@ Description of files from the packages:
 
 ## TODO
   - BUG FIX in O2 correction
-  - ADD support other float models: PROVOR, APEX
-  - ADD corrections (CDOM, Dark) to fluorescence chlorophyll *a* profiles
+  - ADD support GDAC processed and QC data
+  - ADD support other float models: APEX
+  - ADD Dark corrections to fluorescence chlorophyll *a* profiles
   - ADD drift correction to attenuation profiles
   - IMPROVE NPQ correction with Xing17 using PAR signal
   - ADD export in NetCDF format

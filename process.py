@@ -2,7 +2,7 @@
 # @Author: nils
 # @Date:   2016-03-10 14:44:34
 # @Last Modified by:   nils
-# @Last Modified time: 2017-08-10 08:56:25
+# @Last Modified time: 2017-09-10 18:49:31
 
 # PROCESS: this module simplify data procesing using the toolbox module
 #   1. import data
@@ -899,6 +899,9 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
             export_msg_to_json_timeseries(msg_db,
                                           app_cfg['dashboard']['path']['dir'],
                                           usr_id)
+            export_msg_to_json_contour_plot(msg_db,
+                                   app_cfg['dashboard']['path']['dir'],
+                                   usr_id)
             export_msg_to_json_map(msg_db,
                                    app_cfg['dashboard']['path']['dir'],
                                    usr_id)
@@ -949,7 +952,8 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                                   usr_cfg_name))
 
         # Reset Time series and map on first run
-        dashboard_rebuild_timeseries = True;
+        dashboard_rebuild_timeseries = True
+        dashboard_rebuild_contour_plot = True
         dashboard_rebuild_map = True
         # Init first msg date
         first_msg_dt = 'undefined';
@@ -1023,6 +1027,12 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                                           _reset=dashboard_rebuild_timeseries):
                         # Disable time series reset as we just did it
                         dashboard_rebuild_timeseries = False
+                    if 0 == export_msg_to_json_contour_plot(msg_db,
+                                           app_cfg['dashboard']['path']['dir'],
+                                           usr_id,
+                                           _reset=dashboard_rebuild_contour_plot):
+                        # Disable map reset as we just did it
+                        dashboard_rebuild_contour_plot = False
                     if 0 == export_msg_to_json_map(msg_db,
                                            app_cfg['dashboard']['path']['dir'],
                                            usr_id,
