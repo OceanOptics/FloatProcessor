@@ -513,6 +513,11 @@ def convert_msg2pjm(_filename_in, _filename_out):
                     else:
                         fw.write(l[0:14] + l[-1])
 
+                # Case of msg 000
+                if '# GPS fix' in l:
+                    # Start bottom
+                    bottom_flag = True
+
                 # Bottom lines
                 else:
                     fw.write(l)
