@@ -2,7 +2,7 @@ FloatProc
 =========
 _Python library to process biogeochemical float profiles_
 
-Profiles received from biogeochemical (BGC) float can be processed in real-time and delayed mode with this library. Calibrations are applied to convert engineering counts to scientific units followed by the state-of-the-art corrections ([more details](ftp://misclab.umeoce.maine.edu/floats/README.html)). A web interface can be enabled to visualize the time series and profiles from the floats.
+Profiles received from biogeochemical (BGC) float can be processed in real-time and delayed mode with this library. Calibrations are applied to convert engineering counts to scientific units followed by the state-of-the-art corrections ([more details](ftp://misclab.umeoce.maine.edu/floats/README.html)). A web interface can be enabled to visualize the time series and profiles from the floats. The library converts the float msg to plane-jane MSG (PGM) compatible with Argo DAC.
 
 ## Installation
 Packages required and tested version:
@@ -59,8 +59,7 @@ Description of files from the packages:
   - ADD support other float models: APEX
   - ADD Dark corrections to fluorescence chlorophyll *a* profiles
   - ADD drift correction to attenuation profiles
-  - IMPROVE NPQ correction with Xing17 using PAR signal
-  - ADD export in NetCDF format
+  - IMPROVE NPQ correction with current consensus
   - IMPROVE remove warnings from gsw when NaN values
   - REFACTORING process.py in one class
   - ADD Order float by active|more recent deployment in dashboard status

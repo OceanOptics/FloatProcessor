@@ -423,6 +423,102 @@ def import_app_cfg(_filename):
 
 
 ####################
+#   CONVERT DATA   #
+####################
+
+
+def convert_msg2pjm(_filename_in, _filename_out):
+    # Convert msg received from Seabird Navis BGCi float
+    #   to plain-jane msg (pjm) for Argo data center.
+    #   The function is stripping-out non core-argo data.
+    #.  Keep only pressure, temperature, and salinity.
+
+    with open(_filename_in, 'r') as fr:
+
+        # Create directory if necessary
+        path_out = os.path.dirname(_filename_out)
+        if not os.path.exists(path_out):
+            os.makedirs(path_out)
+
+        with open(_filename_out, 'w') as fw:
+            park_sample_flag = False
+            profile_header_flag = False
+            profile_flag = False
+            bottom_flag = False
+            for l in fr:
+                # print(l, end='')
+                # Empty
+                if len(l) == 1:
+                    continue
+
+                # Special lines
+                elif '$                        Date        p       t      s' in l:
+                    # Skip line
+                    continue
+                elif '$       p       t      s' in l:
+                    # Trigger park sample flag
+                    park_sample_flag = True
+                    # Reformat line
+                    fw.write('$       p       t      s' + l[-1])
+
+                # Park Observation
+                elif 'ParkObs' in l and not bottom_flag:
+                    # Reformat line
+                    dt = l[8:29] # date
+                    pt = l[29:46] # pressure and temperature
+                    foo = ' ??? 0'
+                    fw.write('ParkPt: ' + dt + foo + pt + l[-1])
+
+                # Park Sample
+                elif park_sample_flag:
+                    if l[0:9] == '# GPS fix':
+                        # End Park Sample
+                        park_sample_flag = False
+                        # No profile header
+                        # No profile
+                        # Start bottom
+                        bottom_flag = True
+                        fw.write(l)
+                    elif l[0] == '#':
+                        # End Park Sample
+                        park_sample_flag = False
+                        # Start profile header
+                        profile_header_flag = True
+                        fw.write(l)
+                    else:
+                        fw.write(l[0:24] + l[-1])
+
+                # Profile Header
+                elif profile_header_flag:
+                    if l[0:4] == 'ser1' or 'tilt: yes' in l:
+                        # End profile header
+                        profile_header_flag = False
+                        # Start profile
+                        profile_flag = True
+                        # Skip line
+                    else:
+                        raise ValueError('Unexpected profile header line:\n'+l)
+
+                # Profile
+                elif profile_flag:
+                    if l[0:14] == '00000000000000':
+                        # Skip line
+                        continue
+                    elif l[0:4] == 'Resm':
+                        # End profile
+                        profile_flag = False
+                        # Start bottom
+                        bottom_flag = True
+                        # Skip line
+                    else:
+                        fw.write(l[0:14] + l[-1])
+
+                # Bottom lines
+                else:
+                    fw.write(l)
+
+
+####################
 #   PROCESS DATA   #
 ####################
 
@@ -974,6 +1070,12 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
         msg_list.sort()
 
         for msg_name in msg_list:
+            # Make plan-jane MSG (PJM)
+            if 'Navis' in usr_cfg['model']:
+                convert_msg2pjm(os.path.join(app_cfg['process']['path']['msg'], usr_id, msg_name),
+                                os.path.join(app_cfg['process']['path']['out'],
+                                             app_cfg['process']['path']['pjm'], usr_id, msg_name))
+
             # Load message
             if 'Navis' in usr_cfg['model']:
                 msg_l0 = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
@@ -1067,4 +1169,5 @@ if __name__ == '__main__':
     # rt('0572.001.msg')
     # rt('lovbio032b_010_00_09.txt')
     bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    bash(['n0846', 'n0847', 'n0848', 'n0849', 'n0850', 'n0851', 'n0852'])
     bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])
