@@ -444,7 +444,7 @@ def convert_msg2pjm(_filename_in, _filename_out):
             park_sample_flag = False
             profile_header_flag = False
             profile_flag = False
-            bottom_flag = False
+            engineering_flag = False
             for l in fr:
                 # print(l, end='')
                 # Empty
@@ -462,7 +462,7 @@ def convert_msg2pjm(_filename_in, _filename_out):
                     fw.write('$       p       t      s' + l[-1])
 
                 # Park Observation
-                elif 'ParkObs' in l and not bottom_flag:
+                elif 'ParkObs' in l and not engineering_flag:
                     # Reformat line
                     dt = l[8:29] # date
                     p = ' %7.2f' % float(l[31:38]) # pressure
@@ -480,7 +480,7 @@ def convert_msg2pjm(_filename_in, _filename_out):
                         # No profile header
                         # No profile
                         # Start bottom
-                        bottom_flag = True
+                        engineering_flag = True
                         fw.write(l)
                     elif l[0] == '#':
                         # End Park Sample
@@ -513,17 +513,18 @@ def convert_msg2pjm(_filename_in, _filename_out):
                         # End profile
                         profile_flag = False
                         # Start bottom
-                        bottom_flag = True
+                        engineering_flag = True
                         # Skip line
                     else:
                         fw.write(l[0:14] + l[-1])
 
-                # Case of msg 000
+                # Case of msg 000 & start Biographical & Engineering (even if already started)
                 elif '# GPS fix' in l:
                     # Start bottom
-                    bottom_flag = True
+                    engineering_flag = True
+                    fw.write(l)
 
-                # Bottom lines
+                # Biographical & Engineering lines
                 else:
                     fw.write(l)
 
