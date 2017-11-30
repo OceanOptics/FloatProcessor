@@ -465,9 +465,12 @@ def convert_msg2pjm(_filename_in, _filename_out):
                 elif 'ParkObs' in l and not bottom_flag:
                     # Reformat line
                     dt = l[8:29] # date
-                    pt = l[29:46] # pressure and temperature
-                    foo = ' ??? 0'
-                    fw.write('ParkPt: ' + dt + foo + pt + l[-1])
+                    p = ' %7.2f' % float(l[31:38]) # pressure
+                    t = ' %7.4f' % float(l[39:46]) # temperature
+                    s = ' %7.4f' % float(l[47:53]) # salinity
+                    unix_epoch = ' %11d' % (datetime.strptime(dt[1:], '%b %d %Y %H:%M:%S') - datetime(1970,1,1)).total_seconds()
+                    m_time = ' %7d' % 0
+                    fw.write('ParkPts: ' + dt + unix_epoch + m_time + p + t + s + l[-1])
 
                 # Park Sample
                 elif park_sample_flag:
@@ -485,6 +488,8 @@ def convert_msg2pjm(_filename_in, _filename_out):
                         # Start profile header
                         profile_header_flag = True
                         fw.write(l)
+                    elif '(Park Sample)' in l:
+                        fw.write(l[0:24] + ' (Park Sample)' + l[-1])
                     else:
                         fw.write(l[0:24] + l[-1])
 
@@ -514,7 +519,7 @@ def convert_msg2pjm(_filename_in, _filename_out):
                         fw.write(l[0:14] + l[-1])
 
                 # Case of msg 000
-                if '# GPS fix' in l:
+                elif '# GPS fix' in l:
                     # Start bottom
                     bottom_flag = True
 
@@ -941,6 +946,11 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
         foo = _msg_name.split('.')
         usr_id = 'n' + foo[0]
         msg_id = foo[1]
+        # Make plan-jane MSG (PJM) -> Navis only
+        convert_msg2pjm(os.path.join(app_cfg['process']['path']['msg'], usr_id, _msg_name),
+                        os.path.join(app_cfg['process']['path']['out'],
+                                     app_cfg['process']['path']['pjm'], usr_id, _msg_name))
+        # Load float msg
         msg_l0 = import_navis_msg(os.path.join(app_cfg['process']['path']['msg'],
                                     usr_id, _msg_name))
     elif _msg_name[-3:] == 'txt':
@@ -1075,7 +1085,7 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
         msg_list.sort()
 
         for msg_name in msg_list:
-            # Make plan-jane MSG (PJM)
+            # Make plan-jane MSG (PJM) -> Navis only
             if 'Navis' in usr_cfg['model']:
                 convert_msg2pjm(os.path.join(app_cfg['process']['path']['msg'], usr_id, msg_name),
                                 os.path.join(app_cfg['process']['path']['out'],
