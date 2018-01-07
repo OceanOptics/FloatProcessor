@@ -71,40 +71,35 @@ def import_navis_msg(filename):
         # Get float_id and profile_id
         if l.find('$ FloatId') != -1:
             d['float_id'] = int(float(l[-6:-2]))
-            continue
-        if l.find('FloatId') != -1:
+        elif l.find('FloatId') != -1:
             if 'float_id' not in d.keys():
                 d['float_id'] = int(float(l[-5:-1]))
-                continue
-        if l.find('ProfileId=') != -1:
+        elif l.find('ProfileId=') != -1:
             d['profile_id'] = int(float(l[-4:-1]))
-            continue
 
         # Get date of end of profile
-        foo = l.find('terminated')
-        if foo != -1:
+        elif l.find('terminated') != -1:
+            foo = l.find('terminated')
             d['dt'] = datetime.strptime(l[foo + 12:-1], '%a %b %d %H:%M:%S %Y')
-            continue
 
         # Get position
-        if l.find('Fix:') != -1:
+        elif l.find('Fix:') != -1:
             s = [e for e in l.split(' ') if e]  # keep only non empty str
             d['lat'] = float(s[2])
             d['lon'] = float(s[1])
             # save date if not done yet
             if 'dt' not in d.keys():
                 d['dt'] = datetime.strptime(s[3] + s[4], '%m/%d/%Y%H%M%S')
-            continue
 
         # Check if Crover embedded
-        if (l.find('cRover') != -1 or
+        elif (l.find('cRover') != -1 or
             l.find('Crover') != -1) and not crv_on:
             crv_on = True
             obs['c_count'] = list()
             obs['c_su'] = list()
 
         # Get park observations
-        if l.find('ParkObs:') != -1:
+        elif l.find('ParkObs:') != -1:
             s = [e for e in l.split(' ') if e]  # keep only non empty str
             park_obs['dt'].append(
                 datetime.strptime(s[1] + s[2] + s[3] + s[4], '%b%d%Y%H:%M:%S'))
@@ -115,16 +110,14 @@ def import_navis_msg(filename):
             park_obs['o2_t'].append(float(s[9][0:-1]))
 
         # Get profile observation
-        if l.find('ser1') != -1:
+        elif l.find('ser1') != -1:
             obs_begin = True
-            continue
-        if l.find('Resm') != -1:
+        elif l.find('Resm') != -1:
             obs_end = True
-            continue
-        if l.find('00000000000000FFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFF') != -1:
+        elif l.find('00000000000000FFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFF') != -1:
             # skip observation
             continue
-        if obs_begin and not obs_end and len(l) in valid_obs_len:
+        elif obs_begin and not obs_end and len(l) in valid_obs_len:
             # Variables are 16-bit hex-encoded
             # Get pressure (dBar)
             foo = int(l[0:4], 16)
@@ -235,10 +228,53 @@ def import_navis_msg(filename):
             #   print(p, t, s, o2, o2t, fchl, beta, fdom, par, tilt, tilt_std)
             # continue
 
+        # Get engineering data (valid on ly for vanilla/BGCi floats)
+        # Air Pump
+        elif l.find('AirPumpAmps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['AirPumpAmps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('AirPumpVolts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['AirPumpVolts'] = int(s[1]) * 19.767 / 4096
+        # Buoyancy Pump
+        elif l.find('BuoyancyPumpAmps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['BuoyancyPumpAmps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('BuoyancyPumpVolts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['BuoyancyPumpVolts'] = int(s[1]) * 19.767 / 4096
+        # Quiescent
+        elif l.find('QuiescentAmps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['QuiescentAmps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('QuiescentVolts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['QuiescentVolts'] = int(s[1]) * 19.767 / 4096
+        # SBE41CP
+        elif l.find('Sbe41cpAmps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['Sbe41cpAmps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('Sbe41cpVolts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['Sbe41cpVolts'] = int(s[1]) * 19.767 / 4096
+        # MCOMS
+        elif l.find('McomsAmps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['McomsAmps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('McomsVolts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['McomsVolts'] = int(s[1]) * 19.767 / 4096
+        # SBE63
+        elif l.find('Sbe63Amps') != -1:
+            s = [e for e in l.split('=') if e]
+            d['Sbe63Amps'] = int(s[1]) * 3.3 / 4096 / 0.698
+        elif l.find('Sbe63Volts') != -1:
+            s = [e for e in l.split('=') if e]
+            d['Sbe63Volts'] = int(s[1]) * 19.767 / 4096
+
         # Check if file is complete
-        if l.find('<EOT>') != -1:
+        elif l.find('<EOT>') != -1:
             d['EOT'] = True
-            continue
 
     d['obs'] = obs
     d['park_obs'] = park_obs
@@ -1157,22 +1193,19 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
                                            _reset=dashboard_rebuild_map):
                         # Disable map reset as we just did it
                         dashboard_rebuild_map = False
-                if msg_db['profile_id'] == 0:
-                    first_msg_dt = msg_db['dt']
-                    # Update db with information of first profile
-                    update_db(msg_db, usr_cfg, app_cfg)
+                # Update database with meta data and engineering data
+                update_db(msg_db, usr_cfg, app_cfg)
+                # if msg_db['profile_id'] == 0:
+                #     first_msg_dt = msg_db['dt']
 
-        # Update dashboard with information from last message
-        if msg_list and app_cfg['dashboard']['active']['bash']:
-            update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
-                                             app_cfg['dashboard']['path']['usr_status']),
-                                usr_id, _wmo=usr_cfg['wmo'],
-                                _dt_first=first_msg_dt,
-                                _dt_last=msg_db['dt'],
-                                _profile_n=msg_db['profile_id'])
-
-            # Update database of dashboard
-            update_db(msg_db, usr_cfg, app_cfg)
+        # Update dashboard file with information from last message
+        # if msg_list and app_cfg['dashboard']['active']['bash']:
+        #     update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
+        #                                      app_cfg['dashboard']['path']['usr_status']),
+        #                         usr_id, _wmo=usr_cfg['wmo'],
+        #                         _dt_first=first_msg_dt,
+        #                         _dt_last=msg_db['dt'],
+        #                         _profile_n=msg_db['profile_id'])
 
         if __debug__:
             print('Done')
@@ -1185,5 +1218,5 @@ if __name__ == '__main__':
     # rt('0572.001.msg')
     # rt('lovbio032b_010_00_09.txt')
     bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
-    bash(['n0846', 'n0847', 'n0848', 'n0849', 'n0850', 'n0851', 'n0852'])
-    bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])
+    # bash(['n0846', 'n0847', 'n0848', 'n0849', 'n0850', 'n0851', 'n0852'])
+    # bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])

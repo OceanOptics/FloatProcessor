@@ -147,7 +147,7 @@ def update_db(_msg, _usr_cfg, _app_cfg):
     cur = db.execute('SELECT id FROM meta WHERE wmo = ?', [_usr_cfg['wmo']])
     entries = cur.fetchall()
     if not entries:
-        # New float
+        # New float metadata
         db.execute('INSERT INTO meta (wmo, lab_id, pi, project, model,'
                                       'profile,'
                                       'dt_deploy, lat_deploy, lon_deploy,'
@@ -161,9 +161,10 @@ def update_db(_msg, _usr_cfg, _app_cfg):
                      _msg['dt'], _msg['lat'], _msg['lon'],
                      'NA'])
     else:
-        # Update float
+        # Display warning
         if len(entries) > 1:
             print('WARNING: Float is present more than once in db')
+        # Update float metadata
         if dt_deploy == '':
             db.execute('UPDATE meta SET wmo = ?, lab_id = ?, pi = ?, project = ?,'
                                         'model = ?, profile = ?,'
@@ -187,6 +188,22 @@ def update_db(_msg, _usr_cfg, _app_cfg):
                          _msg['profile_id'], dt_deploy, lat_deploy, lon_deploy,
                          _msg['dt'], _msg['lat'], _msg['lon'],
                          'NA', entries[0][0]])
+    # Add float engineering data
+    db.execute('INSERT INTO engineering_data (lab_id, profile_id, dt,'
+                                             'AirPumpAmps, AirPumpVolts,'
+                                             'BuoyancyPumpAmps, BuoyancyPumpVolts,'
+                                             'QuiescentAmps, QuiescentVolts,'
+                                             'Sbe41cpAmps, Sbe41cpVolts,'
+                                             'McomsAmps, McomsVolts,'
+                                             'Sbe63Amps, Sbe63Volts) VALUES '
+                                             '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [_usr_cfg['user_id'], _msg['profile_id'], _msg['dt'],
+                _msg['AirPumpAmps'], _msg['AirPumpVolts'],
+                _msg['BuoyancyPumpAmps'], _msg['BuoyancyPumpVolts'],
+                _msg['QuiescentAmps'], _msg['QuiescentVolts'],
+                _msg['Sbe41cpAmps'], _msg['Sbe41cpVolts'],
+                _msg['McomsAmps'], _msg['McomsVolts'],
+                _msg['Sbe63Amps'], _msg['Sbe63Volts']])
     db.commit()
 
     # Disconnect from database
