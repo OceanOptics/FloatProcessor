@@ -31,6 +31,13 @@ TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s', 'chla']
 # fields for contour plot
 CONTOUR_PLOT_FIELDS = ['par','t','s','chla','bbp','fdom','o2_c']
 CONTOUR_PLOT_FIELDS_MANDATORY = ['t', 'chla']
+# fiels for engineering data
+ENGINEERING_DATA_FIELDS = ['AirPumpAmps', 'AirPumpVolts',
+                           'BuoyancyPumpAmps', 'BuoyancyPumpVolts',
+                           'QuiescentAmps', 'QuiescentVolts',
+                           'Sbe41cpAmps', 'Sbe41cpVolts',
+                           'McomsAmps', 'McomsVolts',
+                           'Sbe63Amps', 'Sbe63Volts']
 
 FIELD_NAME = {'p':'Pressure', 'par':'PAR', 't':'Temperature', 's':'Salinity',
               'chla':'Chlorophyll a', 'bbp':'bbp', 'fdom':'FDOM', 'o2_c':'O2'}
@@ -189,21 +196,22 @@ def update_db(_msg, _usr_cfg, _app_cfg):
                          _msg['dt'], _msg['lat'], _msg['lon'],
                          'NA', entries[0][0]])
     # Add float engineering data
-    db.execute('INSERT INTO engineering_data (lab_id, profile_id, dt,'
-                                             'AirPumpAmps, AirPumpVolts,'
-                                             'BuoyancyPumpAmps, BuoyancyPumpVolts,'
-                                             'QuiescentAmps, QuiescentVolts,'
-                                             'Sbe41cpAmps, Sbe41cpVolts,'
-                                             'McomsAmps, McomsVolts,'
-                                             'Sbe63Amps, Sbe63Volts) VALUES '
-                                             '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                [_usr_cfg['user_id'], _msg['profile_id'], _msg['dt'],
-                _msg['AirPumpAmps'], _msg['AirPumpVolts'],
-                _msg['BuoyancyPumpAmps'], _msg['BuoyancyPumpVolts'],
-                _msg['QuiescentAmps'], _msg['QuiescentVolts'],
-                _msg['Sbe41cpAmps'], _msg['Sbe41cpVolts'],
-                _msg['McomsAmps'], _msg['McomsVolts'],
-                _msg['Sbe63Amps'], _msg['Sbe63Volts']])
+    if set(ENGINEERING_DATA_FIELDS).issubset(_msg.keys()):
+        db.execute('INSERT INTO engineering_data (lab_id, profile_id, dt,'
+                                                 'AirPumpAmps, AirPumpVolts,'
+                                                 'BuoyancyPumpAmps, BuoyancyPumpVolts,'
+                                                 'QuiescentAmps, QuiescentVolts,'
+                                                 'Sbe41cpAmps, Sbe41cpVolts,'
+                                                 'McomsAmps, McomsVolts,'
+                                                 'Sbe63Amps, Sbe63Volts) VALUES '
+                                                 '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [_usr_cfg['user_id'], _msg['profile_id'], _msg['dt'],
+                    _msg['AirPumpAmps'], _msg['AirPumpVolts'],
+                    _msg['BuoyancyPumpAmps'], _msg['BuoyancyPumpVolts'],
+                    _msg['QuiescentAmps'], _msg['QuiescentVolts'],
+                    _msg['Sbe41cpAmps'], _msg['Sbe41cpVolts'],
+                    _msg['McomsAmps'], _msg['McomsVolts'],
+                    _msg['Sbe63Amps'], _msg['Sbe63Volts']])
     db.commit()
 
     # Disconnect from database
@@ -445,5 +453,6 @@ def export_msg_to_json_map(_msg, _path, _usr_id, _reset=False):
 
 if __name__ == '__main__':
     from process import bash
-    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    # bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    bash(['metbio003d', 'metbio010d'])
 
