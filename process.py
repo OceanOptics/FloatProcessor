@@ -22,6 +22,7 @@ from collections import OrderedDict
 import gsw
 from toolbox import *
 from dashboard import *
+from argo_server import ArgoServer
 
 
 ###########################
@@ -952,7 +953,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
 ####################
 
 
-def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
+def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/float_processor_conf.json'):
        #_dark_fl_name=None):
     # Process a profile from RAW to L2
     #   processed data is exported to data directory
@@ -1031,6 +1032,9 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
     else:
         msg_db = msg_l0
 
+    # Upload data on Argo server
+    if app_cfg['argo']['active']['rt']:
+        ArgoServer(app_cfg, usr_id, _msg_name)
 
     if app_cfg['dashboard']['active']['rt']:
         # Update dashboard (json files)
@@ -1060,7 +1064,7 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/app_cfg.json'):
         print('Done')
 
 
-def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
+def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.json'):
     #, _dark_fl_names=None):
     # Process all the profiles from a specific float
     #   processed data is exported to data directory
@@ -1090,6 +1094,8 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
 
     # Load application configuration
     app_cfg = import_app_cfg(_app_cfg_name)
+    # Connect to Argo server
+    argo_server = ArgoServer(app_cfg)
     # Run each user
     for (usr_id, usr_cfg_name) in zip(_usr_ids, usr_cfg_names):
         if __debug__:
@@ -1168,6 +1174,10 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
             else:
                 msg_db = msg_l0
 
+            # Upload data on Argo server
+            if app_cfg['argo']['active']['rt']:
+                argo_server.upload_profile(usr_id, msg_name)
+
             # Update dashboard
             if app_cfg['dashboard']['active']['bash']:
                 if len(msg_db['obs']['p']) > 0:
@@ -1213,10 +1223,10 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/app_cfg.json'):
     return 0
 
 if __name__ == '__main__':
-    # for i in range(109):
-    #     rt('0572.%03d.msg' % i)
+    for i in range(109):
+        rt('0572.%03d.msg' % i)
     # rt('0572.001.msg')
     # rt('lovbio032b_010_00_09.txt')
-    bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
+    # bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
     # bash(['n0846', 'n0847', 'n0848', 'n0849', 'n0850', 'n0851', 'n0852'])
     # bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])

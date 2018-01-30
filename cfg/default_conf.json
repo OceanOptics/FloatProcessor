@@ -1,0 +1,45 @@
+{
+  "process":{
+    "active":{
+      "bash":1,
+      "rt":1
+    },
+    "path":{
+      "usr_cfg":"/path/to/floats/param/",
+      "msg":"/path/to/floats/RAW_EOT/",
+      "msg_provor":"/path/to/floats/VLFR/",
+      "out":"/path/to/floats/",
+      "pjm":"PJM",
+      "level":["L0", "L1", "L2"],
+      "log":"/path/to/floats/FloatProcess.log",
+      "err":"/path/to/floats/FloatProcess.err",
+      "pid":"/path/to/floats/FloatProcess.pid"
+    }
+  },
+  "dashboard":{
+    "active":{
+      "bash":1,
+      "rt":1
+    },
+    "path":{
+      "dir":"/path/to/FloatExplorer/static/data/",
+      "usr_status":"float_status.json",
+      "db":"/path/to/FloatExplorer/static/data/float_explorer.db"
+    }
+  },
+  "argo":{
+    "active":{
+      "bach":0,
+      "rt":1
+    },
+    "host":"host_name.com",
+    "username":"username",
+    "password":"somepassword",
+    "timeout":30,
+    "path":{
+      "msg":"argo_bio/",
+      "log":"/path/to/argo/",
+      "pjm":"/path/to/argo/"
+    }
+  }
+}

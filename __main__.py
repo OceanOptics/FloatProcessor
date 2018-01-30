@@ -24,3 +24,4 @@ else:
         bash(sys.argv[3:], _app_cfg_name=sys.argv[2])
     else:
         print('Unable to run, unknown mode')
+

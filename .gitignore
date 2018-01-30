@@ -99,3 +99,10 @@ ENV/
 
 # OSX files
 .DS_Store
+
+# PyCharm files
+.idea/
+
+# Project specific
+cfg/float_processor_conf.json
+debug-notebook.ipynb
