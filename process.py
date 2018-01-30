@@ -1176,8 +1176,7 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.js
 
             # Upload data on Argo server
             if app_cfg['argo']['active']['bash']:
-                print('jouec')
-                # argo_server.upload_profile(usr_id, msg_name)
+                argo_server.upload_profile(usr_id, msg_name)
 
             # Update dashboard
             if app_cfg['dashboard']['active']['bash']:
