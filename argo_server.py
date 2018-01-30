@@ -51,7 +51,7 @@ class ArgoServer:
         # Upload log
         log_name = _msg_name[:-4] + '.log'
         if os.path.isfile(os.path.join(path2msg, log_name)):
-            self.upload(log_name, path2msg, self.cfg['argo']['path']['msg'])
+            self.upload(log_name, path2msg, self.cfg['argo']['path']['log'])
         # Upload pjm
         path2pjm = os.path.join(self.cfg['process']['path']['out'],
                                 self.cfg['process']['path']['pjm'], _usr_id)
