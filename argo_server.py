@@ -47,9 +47,13 @@ class ArgoServer:
         # Upload msg
         path2msg = os.path.join(self.cfg['process']['path']['msg'], _usr_id)
         if os.path.isfile(os.path.join(path2msg, _msg_name)):
-            self.upload(_msg_name, path2msg,self.cfg['argo']['path']['msg'])
+            self.upload(_msg_name, path2msg, self.cfg['argo']['path']['msg'])
         # Upload log
-        log_name = _msg_name[:-4] + '.log'
+        # log_name = _msg_name[:-4] + '.log'
+        # if os.path.isfile(os.path.join(path2msg, log_name)):
+        #     self.upload(log_name, path2msg, self.cfg['argo']['path']['log'])
+        # Upload previous log ### NOT RECOMMENDED BUT FAST TRICK THAT WILL WORK ###
+        log_name = '%s.%03d.log' % (_msg_name[:-8], int(_msg_name[-7:-4])-1)
         if os.path.isfile(os.path.join(path2msg, log_name)):
             self.upload(log_name, path2msg, self.cfg['argo']['path']['log'])
         # Upload pjm
