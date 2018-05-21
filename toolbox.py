@@ -88,7 +88,7 @@ def radiometer_calibration(_counts, _coef):
 
 
 def o2_phase_calibration(_o2_phase_volt, _o2_t, _coef_phase):
-  # convert SBE63 phase voltage to oxygen concentration
+  # convert SBE63 phase voltage to oxygen concentration (mL/L)
   #
   # INPUT:
   #   _o2_phase_volt np.array

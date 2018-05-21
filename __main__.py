@@ -5,7 +5,7 @@
 # @Last Modified time: 2017-08-10 10:15:03
 
 import sys
-from process import bash, rt
+from process import bash, rt, update
 
 
 print('FloatProcess v0.2.2')
@@ -22,6 +22,8 @@ else:
             rt(sys.argv[3], _app_cfg_name=sys.argv[2])
     elif sys.argv[1] == 'bash':
         bash(sys.argv[3:], _app_cfg_name=sys.argv[2])
+    elif sys.argv[1] == 'update':
+        update(sys.argv[3:], _app_cfg_name=sys.argv[2])
     else:
         print('Unable to run, unknown mode')
 

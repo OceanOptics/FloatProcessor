@@ -59,7 +59,7 @@ def import_navis_msg(filename):
     valid_obs_len = [e + 1 for e in valid_obs_len]
 
     f = open(filename, 'r')
-    d = dict()
+    d = {'dt':None, 'lat': None, 'lon': None, 'profile_id': None, 'float_id': None}
     obs = {"p": list(), "t": list(), "s": list(), "o2_ph": list(),
            "o2_t": list(), "fchl": list(), "beta": list(), "fdom": list(),
            "par": list(), "tilt": list(), "tilt_std": list()}
@@ -955,6 +955,7 @@ def export_csv(_msg, _usr_cfg, _app_cfg, _proc_level,
 
 def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/float_processor_conf.json'):
        #_dark_fl_name=None):
+    # Function called by real-time daemon to process profiles
     # Process a profile from RAW to L2
     #   processed data is exported to data directory
     #
@@ -1037,35 +1038,114 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/float_processor_conf.js
         ArgoServer(app_cfg, usr_id, _msg_name)
 
     if app_cfg['dashboard']['active']['rt']:
-        # Update dashboard (json files)
-        update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
-                                         app_cfg['dashboard']['path']['usr_status']),
-                            usr_id, _wmo=usr_cfg['wmo'],
-                            _dt_last=msg_db['dt'],
-                            _profile_n=msg_db['profile_id'])
-        if len(msg_db['obs']['p']) > 0:
-            # If profile not empty
-            export_msg_to_json_profile(msg_db,
+        if msg_db['dt'] is None:
+            print('WARNING: No dt available for msg, not updating dashboard.')
+        else:
+            # Update dashboard (json files)
+            update_float_status(os.path.join(app_cfg['dashboard']['path']['dir'],
+                                             app_cfg['dashboard']['path']['usr_status']),
+                                usr_id, _wmo=usr_cfg['wmo'],
+                                _dt_last=msg_db['dt'],
+                                _profile_n=msg_db['profile_id'])
+            if len(msg_db['obs']['p']) > 0:
+                # If profile not empty
+                export_msg_to_json_profile(msg_db,
+                                           app_cfg['dashboard']['path']['dir'],
+                                           usr_id)
+                export_msg_to_json_timeseries(msg_db,
+                                              app_cfg['dashboard']['path']['dir'],
+                                              usr_id)
+                export_msg_to_json_contour_plot(msg_db,
                                        app_cfg['dashboard']['path']['dir'],
                                        usr_id)
-            export_msg_to_json_timeseries(msg_db,
-                                          app_cfg['dashboard']['path']['dir'],
-                                          usr_id)
-            export_msg_to_json_contour_plot(msg_db,
-                                   app_cfg['dashboard']['path']['dir'],
-                                   usr_id)
-            export_msg_to_json_map(msg_db,
-                                   app_cfg['dashboard']['path']['dir'],
-                                   usr_id)
-        # Update database of dashboard
-        update_db(msg_db, usr_cfg, app_cfg)
+                export_msg_to_json_map(msg_db,
+                                       app_cfg['dashboard']['path']['dir'],
+                                       usr_id)
+            # Update database of dashboard
+            update_db(msg_db, usr_cfg, app_cfg)
 
     if __debug__:
         print('Done')
 
 
+def update(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.json'):
+    # Add all new profiles calling rt for most recent data
+    # Often used to uptade db on local computer (much faster than bash as there is no need to reprocess all the profiles
+    # Check input
+    if not _usr_cfg_names:
+        usr_cfg_names = list()
+        for usr_id in _usr_ids:
+            usr_cfg_names.append(usr_id + '_cfg.json')
+    else:
+        usr_cfg_names = _usr_cfg_names
+
+    # Load application configuration
+    app_cfg = import_app_cfg(_app_cfg_name)
+
+    # Run each user
+    for (usr_id, usr_cfg_name) in zip(_usr_ids, usr_cfg_names):
+        if __debug__:
+            print('Update ' + usr_id + '...', flush=True)
+
+        # Load user configuration
+        usr_cfg = import_usr_cfg(os.path.join(
+            app_cfg['process']['path']['usr_cfg'],
+            usr_cfg_name))
+
+        # List all messages
+        if 'Navis' in usr_cfg['model']:
+            msg_list = [name for name in os.listdir(os.path.join(
+                app_cfg['process']['path']['msg'],
+                usr_id)) if name[-4:] == '.msg']
+        elif 'PROVOR' in usr_cfg['model']:
+            msg_list = [name[0:-7] for name in os.listdir(os.path.join(
+                app_cfg['process']['path']['msg_provor'],
+                usr_id)) if name[-7:] == '_09.txt']
+        else:
+            print('ERROR: Unknow float model')
+            return -1
+
+        # Sort list as os.listdir return elements in arbitraty order
+        msg_list.sort()
+
+        # Query meta from db
+        db = sqlite3.connect(app_cfg['dashboard']['path']['db'])
+        cur = db.execute('SELECT profile FROM meta WHERE wmo = ?', [usr_cfg['wmo']])
+        entries = cur.fetchall()
+        db.close()
+        if not entries[0]:
+            raise ValueError('Float is not in database, run bash instead of update.')
+        else:
+            current_msg = entries[0][0]
+
+        # Get float profiles
+        msg_to_process = list()
+        for msg_name in msg_list:
+            if msg_name[-3:] == 'msg':
+                # Navis
+                foo = msg_name.split('.')
+                msg_id = int(foo[1])
+            elif msg_name[-3:] == 'txt':
+                # PROVOR
+                foo = msg_name.split('_')
+                msg_id = int(foo[1] + foo[2])
+            else:
+                raise ValueError('Invalid float message name.')
+
+            if current_msg < msg_id:
+                msg_to_process.append(msg_name)
+
+        # Add new profiles
+        for msg_name in msg_to_process:
+            rt(msg_name, _usr_cfg_name=usr_cfg_name, _app_cfg_name=_app_cfg_name)
+
+        if __debug__:
+            print('Update ' + usr_id + '... Done', flush=True)
+
+
 def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.json'):
     #, _dark_fl_names=None):
+    # Function call to reset database
     # Process all the profiles from a specific float
     #   processed data is exported to data directory
     #   Note: existing data will be replaced
@@ -1094,8 +1174,9 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.js
 
     # Load application configuration
     app_cfg = import_app_cfg(_app_cfg_name)
-    # Connect to Argo server
-    argo_server = ArgoServer(app_cfg)
+    if app_cfg['argo']['active']['bash']:
+        # Connect to Argo server
+        argo_server = ArgoServer(app_cfg)
     # Run each user
     for (usr_id, usr_cfg_name) in zip(_usr_ids, usr_cfg_names):
         if __debug__:
@@ -1222,11 +1303,12 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.js
 
     return 0
 
-if __name__ == '__main__':
-    for i in range(109):
-        rt('0572.%03d.msg' % i)
+# if __name__ == '__main__':
+    # for i in range(109):
+    #     rt('0572.%03d.msg' % i)
     # rt('0572.001.msg')
     # rt('lovbio032b_010_00_09.txt')
     # bash(['n0572', 'n0573', 'n0574', 'n0646', 'n0647', 'n0648'])
     # bash(['n0846', 'n0847', 'n0848', 'n0849', 'n0850', 'n0851', 'n0852'])
     # bash(['lovbio014b', 'lovbio030b', 'lovbio032b', 'metbio003d', 'metbio010d'])
+    # update(['n0846'])

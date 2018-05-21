@@ -121,6 +121,7 @@ def update_float_status(_filename, _float_id, _wmo='undefined',
     with open(_filename, 'w') as outfile:
         json.dump(fs, outfile)
 
+
 def update_db(_msg, _usr_cfg, _app_cfg):
     # Update database
     #
