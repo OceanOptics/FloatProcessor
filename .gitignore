@@ -104,5 +104,5 @@ ENV/
 .idea/
 
 # Project specific
-cfg/float_processor_conf.json
+cfg/*_conf.json
 debug-notebook.ipynb

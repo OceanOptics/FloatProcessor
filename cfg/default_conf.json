@@ -27,15 +27,32 @@
       "db":"/path/to/FloatExplorer/static/data/float_explorer.db"
     }
   },
-  "argo":{
+  "argo_primary":{
     "active":{
-      "bach":0,
-      "rt":1
+      "bash":false,
+      "rt":true
     },
+    "protocol":"ftp",
     "host":"host_name.com",
     "username":"username",
     "password":"somepassword",
     "timeout":30,
+    "path":{
+      "msg":"argo_bio/",
+      "log":"/path/to/argo/",
+      "pjm":"/path/to/argo/"
+    }
+  },
+  "argo_alternate":{
+    "active":{
+      "bash":false,
+      "rt":true
+    },
+    "protocol":"sftp",
+    "host":"host_name.com",
+    "port":22,
+    "username":"username",
+    "password":"somepassword",
     "path":{
       "msg":"argo_bio/",
       "log":"/path/to/argo/",

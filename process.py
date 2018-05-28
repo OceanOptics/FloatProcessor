@@ -1034,8 +1034,10 @@ def rt(_msg_name, _usr_cfg_name=None, _app_cfg_name='cfg/float_processor_conf.js
         msg_db = msg_l0
 
     # Upload data on Argo server
-    if app_cfg['argo']['active']['rt']:
-        ArgoServer(app_cfg, usr_id, _msg_name)
+    if app_cfg['argo_primary']['active']['rt']:
+        ArgoServer(app_cfg['argo_primary'], app_cfg['process']['path'], usr_id, _msg_name)
+    if app_cfg['argo_alternate']['active']['rt']:
+        ArgoServer(app_cfg['argo_alternate'], app_cfg['process']['path'], usr_id, _msg_name)
 
     if app_cfg['dashboard']['active']['rt']:
         if msg_db['dt'] is None:
@@ -1174,9 +1176,11 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.js
 
     # Load application configuration
     app_cfg = import_app_cfg(_app_cfg_name)
-    if app_cfg['argo']['active']['bash']:
-        # Connect to Argo server
-        argo_server = ArgoServer(app_cfg)
+    # Connect to Argo server
+    if app_cfg['argo_primary']['active']['bash']:
+        argo_server_primary = ArgoServer(app_cfg)
+    if app_cfg['argo_alternate']['active']['bash']:
+        argo_server_alternate = ArgoServer(app_cfg)
     # Run each user
     for (usr_id, usr_cfg_name) in zip(_usr_ids, usr_cfg_names):
         if __debug__:
@@ -1256,8 +1260,10 @@ def bash(_usr_ids, _usr_cfg_names=[], _app_cfg_name='cfg/float_processor_conf.js
                 msg_db = msg_l0
 
             # Upload data on Argo server
-            if app_cfg['argo']['active']['bash']:
-                argo_server.upload_profile(usr_id, msg_name)
+            if app_cfg['argo_primary']['active']['bash']:
+                argo_server_primary.upload_profile(app_cfg['process']['path'], usr_id, msg_name)
+            if app_cfg['argo_alternate']['active']['bash']:
+                argo_server_alternate.upload_profile(app_cfg['process']['path'], usr_id, msg_name)
 
             # Update dashboard
             if app_cfg['dashboard']['active']['bash']:
