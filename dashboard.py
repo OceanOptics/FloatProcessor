@@ -47,9 +47,9 @@ FIELD_LABEL = {'p':'Pressure (dBar)', 'par':'PAR (umol photons m<sup>-2</sup> s<
                'bbp':'b<sub>bp</sub>(700) (m<sup>-1</sup>)',
                'fdom':'FDOM (mg m<sup>-3</sup>)',
                'o2_c':'O<sub>2</sub> (mg m<sup>-3</sup>)'}
-FIELD_COLOR_SCALE = {'par':'YIGnBu', 't':'RdBu', 's':'YIGnBu', 'chla':'Greens', 'bbp':'Jet', 'fdom':'Portland', 'o2_c':'YIGnBu'}
-FIELD_REVERSE_SCALE = {'par':False, 't':False, 's':False, 'chla':True, 'bbp':False, 'fdom':False, 'o2_c':False}
-FIELD_PRECISION = {'par':'.2f', 't':'.2f', 's':'.4f', 'chla':'.3f', 'bbp':'.5f', 'fdom':'.3f', 'o2_c':'.2f'}
+FIELD_COLOR_SCALE = {'par':'YIGnBu', 't':'RdBu', 's':'YIGnBu', 'chla_adj':'Greens', 'bbp':'Jet', 'fdom':'Portland', 'o2_c':'YIGnBu'}
+FIELD_REVERSE_SCALE = {'par':False, 't':False, 's':False, 'chla_adj':True, 'bbp':False, 'fdom':False, 'o2_c':False}
+FIELD_PRECISION = {'par':'.2f', 't':'.2f', 's':'.4f', 'chla_adj':'.3f', 'bbp':'.5f', 'fdom':'.3f', 'o2_c':'.2f'}
 
 def update_float_status(_filename, _float_id, _wmo='undefined',
                         _profile_n=-1, _dt_last='undefined',
