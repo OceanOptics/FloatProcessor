@@ -40,10 +40,10 @@ ENGINEERING_DATA_FIELDS = ['AirPumpAmps', 'AirPumpVolts',
                            'Sbe63Amps', 'Sbe63Volts']
 
 FIELD_NAME = {'p':'Pressure', 'par':'PAR', 't':'Temperature', 's':'Salinity',
-              'chla':'Chlorophyll a', 'bbp':'bbp', 'fdom':'FDOM', 'o2_c':'O2'}
+              'chla_adj':'Chlorophyll a', 'bbp':'bbp', 'fdom':'FDOM', 'o2_c':'O2'}
 FIELD_LABEL = {'p':'Pressure (dBar)', 'par':'PAR (umol photons m<sup>-2</sup> s<sup>-1</sup>)',
                't':'Temperature (&deg;C)', 's':'Salinity (ppt)',
-               'chla':'Chlorophyll <i>a</i> (mg m<sup>-3</sup>)',
+               'chla_adj':'Chlorophyll <i>a</i> (mg m<sup>-3</sup>)',
                'bbp':'b<sub>bp</sub>(700) (m<sup>-1</sup>)',
                'fdom':'FDOM (mg m<sup>-3</sup>)',
                'o2_c':'O<sub>2</sub> (mg m<sup>-3</sup>)'}
