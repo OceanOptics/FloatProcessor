@@ -305,6 +305,11 @@ def npq_correction(_p, _fchl, _depth_start_correct, _method="Xing2",
   return fchl[original_index]
 
 
+def slope_correction(_fchl, _calibration="NAAMES"):
+  if _calibration == "NAAMES":
+    return (fchl_npqc - 0.019) / 2.32
+
+
 def o2_salinity_correction(_o2_t, _sp):
   # correct SBE63 oxygen values for salinity
   # translated from matlab: Dan Quittman, Sea-Bird Electronics, Copyright 2011

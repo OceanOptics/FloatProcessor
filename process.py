@@ -725,9 +725,9 @@ def process_L2(_l1, _usr_cfg):
     # Process data to level 2: apply corrections and compute new products
     #
     # DATA ADJUSTMENTS
-    #   chlorophyll a fluorescence (fchl) is corrected for
+    #   chlorophyll a fluorescence (chl_adj) is corrected for
     #     non-photochemical quenching (NPQ) with Xing et al. 2012
-    #     CDOM fluorescence (based on minimum value for dark)
+    #     CDOM fluorescence (based on minimum value for dark, not yet implemented)
     #   oxygen concentration (o2_c) is corrected for
     #     pressure (correction from Dan Quittman, Sea-Bird Electronics)
     #     salinity (correction from Dan Quittman, Sea-Bird Electronics)
@@ -781,9 +781,12 @@ def process_L2(_l1, _usr_cfg):
                                            _method='Xing2')
             else:
                 fchl_npqc = fchl_cdomc
-            # Save corrected data
-            l2['obs']['fl'] = fchl_cdomc   # fluorescence chlorophyll a (fl)
-            l2['obs']['chla'] = fchl_npqc  # chlorophyll a (chla)
+            # Apply slope factor correction for NAAMES area floats
+            fchl_slopec = slope_correction(fchl_npqc)
+            # Keep manufacturer value
+            l2['obs']['fchl'] = val   # fluorescence chlorophyll a (same as level 1)
+            # Save corrected chla
+            l2['obs']['chl_adj'] = fchl_slopec  # chlorophyll a
         # elif key == 'o2_c':
         #     # Compute pressure and salinity correction
         #     o2_p_corr = o2_pressure_correction(_l1['obs']['o2_t'],
