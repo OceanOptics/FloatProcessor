@@ -23,14 +23,14 @@ from scipy.interpolate import interp1d
 #  DASHBOARD FIELDS  #
 ######################
 # fields for profile
-PROFILE_FIELDS = ['p','par','t','s','chla','bbp','fdom','o2_c']
-PROFILE_FIELDS_MANDATORY = ['p','t','s','chla']
+PROFILE_FIELDS = ['p','par','t','s','chla_adj','bbp','fdom','o2_c']
+PROFILE_FIELDS_MANDATORY = ['p','t','s','chla_adj']
 # fields for timeseries
-TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla','bbp','fdom','o2_c']
-TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s', 'chla']
+TIMESERIES_FIELDS = ['profile_id', 'dt','mld','t','s','chla_adj','bbp','fdom','o2_c']
+TIMESERIES_FIELDS_MANDATORY = ['profile_id', 'dt','mld','t','s', 'chla_adj']
 # fields for contour plot
-CONTOUR_PLOT_FIELDS = ['par','t','s','chla','bbp','fdom','o2_c']
-CONTOUR_PLOT_FIELDS_MANDATORY = ['t', 'chla']
+CONTOUR_PLOT_FIELDS = ['par','t','s','chla_adj','bbp','fdom','o2_c']
+CONTOUR_PLOT_FIELDS_MANDATORY = ['t', 'chla_adj']
 # fiels for engineering data
 ENGINEERING_DATA_FIELDS = ['AirPumpAmps', 'AirPumpVolts',
                            'BuoyancyPumpAmps', 'BuoyancyPumpVolts',

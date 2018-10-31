@@ -89,7 +89,7 @@ def import_navis_msg(filename):
             d['lat'] = float(s[2])
             d['lon'] = float(s[1])
             # save date if not done yet
-            if 'dt' not in d.keys():
+            if d['dt'] is None:
                 d['dt'] = datetime.strptime(s[3] + s[4], '%m/%d/%Y%H%M%S')
 
         # Check if Crover embedded
@@ -725,7 +725,7 @@ def process_L2(_l1, _usr_cfg):
     # Process data to level 2: apply corrections and compute new products
     #
     # DATA ADJUSTMENTS
-    #   chlorophyll a fluorescence (chl_adj) is corrected for
+    #   chlorophyll a fluorescence (chla_adj) is corrected for
     #     non-photochemical quenching (NPQ) with Xing et al. 2012
     #     CDOM fluorescence (based on minimum value for dark, not yet implemented)
     #   oxygen concentration (o2_c) is corrected for
@@ -786,7 +786,7 @@ def process_L2(_l1, _usr_cfg):
             # Keep manufacturer value
             l2['obs']['fchl'] = val   # fluorescence chlorophyll a (same as level 1)
             # Save corrected chla
-            l2['obs']['chl_adj'] = fchl_slopec  # chlorophyll a
+            l2['obs']['chla_adj'] = fchl_slopec  # chlorophyll a
         # elif key == 'o2_c':
         #     # Compute pressure and salinity correction
         #     o2_p_corr = o2_pressure_correction(_l1['obs']['o2_t'],
