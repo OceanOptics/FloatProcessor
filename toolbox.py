@@ -307,7 +307,9 @@ def npq_correction(_p, _fchl, _depth_start_correct, _method="Xing2",
 
 def slope_correction(_fchl, _calibration="NAAMES"):
   if _calibration == "NAAMES":
-    return (fchl_npqc - 0.019) / 2.32
+    return (_fchl - 0.019) / 2.32
+  else:
+    raise ValueError('Unknown calibration method.')
 
 
 def o2_salinity_correction(_o2_t, _sp):
