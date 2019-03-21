@@ -93,8 +93,10 @@ def import_navis_msg(filename):
                 d['dt'] = datetime.strptime(s[3] + s[4], '%m/%d/%Y%H%M%S')
 
         # Check if Crover embedded
-        elif (l.find('cRover') != -1 or
-            l.find('Crover') != -1) and not crv_on:
+        # elif (l.find('cRover') != -1 or # created bug in commit of Jan 7, 2018 (due to elif)
+        #     l.find('Crover') != -1) and not crv_on:
+        elif (l.find('CRV') != -1 or
+            l.find('BeamC') != -1) and not crv_on:
             crv_on = True
             obs['c_count'] = list()
             obs['c_su'] = list()
